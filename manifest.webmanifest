@@ -1,0 +1,17 @@
+{
+  "name": "Camera Coach",
+  "short_name": "Camera Coach",
+  "description": "AI hướng dẫn canh góc chụp ảnh, chạy ngay trên điện thoại.",
+  "lang": "vi",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0D0E0C",
+  "theme_color": "#0D0E0C",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

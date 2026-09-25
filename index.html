@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Camera Coach">
+<meta name="theme-color" content="#0D0E0C">
+<title>Camera Coach</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D0E0C; --panel:#1A1B18; --chip:#1F201C; --line:#3A3B35;
+  --text:#F2EFE6; --muted:#BDB8AB; --guide:#F2A93B; --good:#8EC9FF;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body{overflow:hidden;-webkit-user-select:none;user-select:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:3px solid var(--guide);outline-offset:2px}
+[hidden]{display:none!important}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.app{height:100dvh;display:flex;flex-direction:column;padding-top:var(--sat);padding-bottom:var(--sab)}
+
+/* top bar */
+.top{height:56px;flex:none;display:flex;align-items:center;gap:8px;padding:0 14px}
+.round{width:44px;height:44px;border-radius:22px;background:var(--chip);display:grid;place-items:center;color:var(--text)}
+.round svg{width:20px;height:20px}
+.pill{height:36px;padding:0 12px;border-radius:18px;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;
+  background:var(--chip);border:1px solid var(--line);color:var(--muted)}
+.pill svg{width:16px;height:16px}
+.pill.on{background:var(--good);border-color:var(--good);color:var(--bg)}
+.coach-pill{margin-left:auto;font-size:14px;color:var(--guide);border-color:var(--guide)}
+.coach-pill .dot{width:8px;height:8px;border-radius:4px;background:currentColor}
+.coach-pill.ok{color:var(--good);border-color:var(--good)}
+.coach-pill.off{color:var(--muted);border-color:var(--line)}
+.hit{position:relative}
+.hit::after{content:"";position:absolute;inset:-6px -2px}
+
+/* viewfinder */
+.vf{position:relative;flex:none;margin:0 auto;overflow:hidden;background:#000;
+  width:min(100vw, calc((100dvh - var(--sat) - var(--sab) - 240px) * .75));aspect-ratio:3/4}
+.vf video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vf canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.blink{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .12s}
+.blink.on{opacity:.7;transition:none}
+.hud{position:absolute;inset:0;padding:12px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:rgba(13,14,12,.82)}
+.card .ic{flex:none;width:40px;height:40px;border-radius:20px;display:grid;place-items:center;background:var(--guide);color:var(--bg)}
+.card .ic svg{width:21px;height:21px}
+.card.ok .ic{background:var(--good)}
+.card.scan .ic{background:var(--chip);color:var(--text)}
+.card .tx{flex:1;min-width:0}
+.card .t1{font-size:16px;font-weight:600;line-height:1.3}
+.card .t2{font-size:13px;color:var(--muted);line-height:1.35;margin-top:2px}
+.card .tips{font-size:12px;color:var(--muted);margin-top:3px}
+.card .spk{flex:none}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:4px 0}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:30px;padding:0 12px;border-radius:15px;background:rgba(13,14,12,.66);font-size:12px;color:var(--text);
+  display:flex;align-items:center;gap:5px;border:1px solid transparent}
+.chip[aria-pressed="true"]{border-color:var(--guide);color:var(--guide);font-weight:600;background:rgba(13,14,12,.86)}
+.chip svg{width:12px;height:12px}
+.zoom{margin-top:auto;align-self:center;display:flex;gap:8px}
+.zoom button{min-width:36px;height:36px;padding:0 6px;border-radius:18px;background:rgba(13,14,12,.66);font-size:12px;font-weight:600}
+.zoom button[aria-pressed="true"]{color:var(--guide);background:rgba(13,14,12,.86)}
+
+.start{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:28px;
+  background:var(--bg);text-align:left}
+.start h1{margin:0;font-size:28px;line-height:1.15;font-weight:600;letter-spacing:-.01em}
+.start p{margin:0;color:var(--muted);font-size:15px;line-height:1.5}
+.primary{height:52px;border-radius:26px;background:var(--guide);color:var(--bg);font-weight:600;font-size:16px;padding:0 24px}
+.secondary{height:50px;border-radius:25px;border:1px solid var(--line);color:var(--text);font-weight:600;font-size:15px;padding:0 20px}
+
+/* modes + controls */
+.modes{flex:none;display:flex;justify-content:center;gap:26px;margin-top:6px}
+.modes button{min-height:44px;font-size:14px;font-weight:600;color:var(--muted)}
+.modes button[aria-pressed="true"]{color:var(--guide)}
+.controls{flex:1;min-height:100px;display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+.thumb{width:48px;height:48px;border-radius:10px;background:var(--chip);border:1px solid var(--line);display:grid;place-items:center;
+  color:var(--muted);overflow:hidden;position:relative}
+.thumb svg{width:20px;height:20px}
+.thumb input,.filebtn input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.shutter{position:relative;width:88px;height:88px}
+.shutter svg{position:absolute;inset:0}
+.shutter .core{position:absolute;inset:12px;border-radius:50%;background:var(--text);display:grid;place-items:center;
+  font-family:var(--mono);font-size:26px;color:var(--bg)}
+.shutter:active .core{transform:scale(.94)}
+.native{width:58px;height:58px;border-radius:14px;background:var(--chip);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;font-size:10px;font-weight:500}
+.native svg{width:20px;height:20px}
+.choice{flex:none;height:112px;margin:auto 0;display:flex;gap:10px;padding:0 16px}
+.choice button{flex:1;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.choice .now{background:var(--good);color:var(--bg)}
+.choice .cam{background:var(--chip);border:1px solid var(--line)}
+.choice b{font-size:16px}
+.choice small{font-size:11.5px;opacity:.85}
+.choice svg{width:26px;height:26px}
+.scoreline{flex:none;text-align:center;font-size:13px;color:var(--muted);padding:2px 12px 8px;min-height:26px}
+
+/* banner, toast */
+.banner{position:fixed;left:12px;right:12px;top:calc(var(--sat) + 60px);z-index:15;display:flex;align-items:center;gap:10px;
+  padding:6px 4px 6px 14px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.banner span{flex:1;font-size:14px;font-weight:500}
+.filebtn{position:relative;height:38px;padding:0 14px;border-radius:19px;background:var(--guide);color:var(--bg);font-weight:600;
+  font-size:14px;display:flex;align-items:center;overflow:hidden}
+.toast{position:fixed;left:50%;bottom:calc(var(--sab) + 120px);transform:translateX(-50%);z-index:40;max-width:88vw;
+  padding:10px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:14px;text-align:center}
+
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:30;background:var(--bg);overflow-y:auto;-webkit-user-select:text;user-select:text;
+  padding:calc(var(--sat) + 8px) 18px calc(var(--sab) + 24px)}
+.sheet header{display:flex;align-items:center;justify-content:space-between;min-height:48px;margin-bottom:8px}
+.sheet header h2{margin:0;font-size:18px;font-weight:600}
+.sheet header button{min-height:44px;color:var(--guide);font-weight:600}
+.group{margin:18px 0 6px;font-size:13px;color:var(--muted)}
+.box{background:var(--panel);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;min-height:52px;border-bottom:1px solid #2A2B26}
+.row:last-child{border-bottom:0}
+.row label{flex:1;font-size:15px}
+.note{font-size:13px;color:var(--muted);line-height:1.45;margin:8px 2px 0}
+.seg{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--chip)}
+.seg button{flex:1;height:40px;border-radius:10px;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--guide);color:var(--bg);font-weight:600}
+.switch{appearance:none;-webkit-appearance:none;width:50px;height:30px;border-radius:15px;background:var(--line);position:relative;flex:none;margin:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:var(--text);transition:left .15s}
+.switch:checked{background:var(--guide)}
+.switch:checked::after{left:23px;background:var(--bg)}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:36px;height:36px;border-radius:18px;background:var(--chip);font-size:18px}
+.textin{width:100%;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--chip);padding:0 12px;font-size:16px}
+.step{display:flex;gap:12px;padding:14px;background:var(--panel);border-radius:16px;margin-bottom:10px}
+.step .n{flex:none;width:28px;height:28px;border-radius:14px;border:2px solid var(--guide);color:var(--guide);display:grid;place-items:center;
+  font-family:var(--mono);font-size:13px}
+.step h3{margin:0 0 6px;font-size:16px;font-weight:600}
+.step p{margin:0;font-size:14px;color:var(--muted);line-height:1.5}
+.step .primary{height:40px;font-size:14px;margin-top:10px;padding:0 16px}
+.stack{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+
+/* review */
+.review img{display:block;width:100%;max-height:48vh;object-fit:contain;border-radius:14px;background:#000}
+.verdict{display:flex;align-items:center;gap:14px;margin:16px 0 10px}
+.verdict .big{font-family:var(--mono);font-size:44px;line-height:1}
+.verdict b{display:block;font-size:17px}
+.verdict small{font-size:13px;color:var(--muted)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.checks li{display:flex;gap:10px;font-size:15px;line-height:1.4}
+.checks svg{flex:none;width:18px;height:18px;margin-top:2px}
+.review .actions{display:flex;gap:10px;margin-top:22px}
+.review .actions button{flex:1}
+.light{background:var(--text);color:var(--bg)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="top">
+    <button class="pill hit" id="autoBtn" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>
+      Tự chụp
+    </button>
+    <button class="pill coach-pill hit" id="coachBtn" aria-pressed="true"><span class="dot"></span>AI Coach</button>
+    <button class="round" id="settingsBtn" aria-label="Cài đặt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+    </button>
+  </div>
+
+  <div class="vf" id="vf">
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="ov"></canvas>
+    <div class="blink" id="blink"></div>
+    <div class="hud" id="hud" hidden>
+      <div class="card scan" id="card">
+        <div class="ic" id="cardIc"></div>
+        <div class="tx">
+          <div class="t1" id="cardT1">Đang đọc khung hình…</div>
+          <div class="t2" id="cardT2">Tìm người, chủ thể và độ nghiêng máy</div>
+          <div class="tips" id="cardTips"></div>
+        </div>
+        <button class="round spk" id="speakBtn" aria-label="Đọc to hướng dẫn cho người được chụp" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        </button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="zoom" id="zoom"></div>
+    </div>
+    <div class="start" id="start">
+      <h1>Canh góc đẹp trước khi chụp</h1>
+      <p>AI nhìn khung hình, bảo bạn xoay máy hay dịch người vào đâu. Canh xong, mở Camera của iPhone để chụp với chất lượng đầy đủ.</p>
+      <p>Mọi phân tích chạy ngay trên điện thoại, không gửi ảnh đi đâu.</p>
+      <button class="primary" id="startBtn">Bật camera</button>
+      <p id="startErr" class="note" hidden></p>
+    </div>
+  </div>
+
+  <div class="modes" role="group" aria-label="Chế độ hướng dẫn">
+    <button id="modeCam" aria-pressed="true">Chỉnh máy</button>
+    <button id="modeSubj" aria-pressed="false">Chỉnh người được chụp</button>
+  </div>
+
+  <div class="controls" id="controls">
+    <label class="thumb" aria-label="Chấm điểm một ảnh có sẵn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg>
+      <input type="file" accept="image/*" id="libInput">
+    </label>
+    <button class="shutter" id="shutter" aria-label="Chụp trong app">
+      <svg viewBox="0 0 88 88" width="88" height="88">
+        <circle cx="44" cy="44" r="40" fill="none" stroke="#1F201C" stroke-width="4"/>
+        <circle id="ring" cx="44" cy="44" r="40" fill="none" stroke="#F2A93B" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="0 252" transform="rotate(-90 44 44)" opacity="0"/>
+      </svg>
+      <span class="core" id="shutterCore"></span>
+    </button>
+    <button class="native" id="nativeBtn" aria-label="Mở Camera của iPhone">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      Camera gốc
+    </button>
+  </div>
+  <div class="choice" id="choice" hidden>
+    <button class="cam" id="choiceCam">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      <b>Camera gốc</b><small>chất lượng đầy đủ</small>
+    </button>
+    <button class="now" id="choiceNow">
+      <svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="13" cy="13" r="7" fill="currentColor"/></svg>
+      <b>Chụp ngay</b><small>trong app, giữ đúng góc</small>
+    </button>
+  </div>
+  <div class="scoreline" id="scoreline"></div>
+</div>
+
+<div class="banner" id="banner" hidden>
+  <span>Chấm điểm ảnh vừa chụp bằng Camera gốc?</span>
+  <label class="filebtn">Chọn ảnh<input type="file" accept="image/*" id="bannerInput"></label>
+  <button class="round" id="bannerClose" aria-label="Đóng" style="background:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+  </button>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<!-- Settings -->
+<section class="sheet" id="settings" hidden aria-labelledby="settingsTitle">
+  <header><h2 id="settingsTitle">Cài đặt AI Coach</h2><button id="settingsDone">Xong</button></header>
+  <div class="group">Mức hướng dẫn</div>
+  <div class="seg" id="levelSeg">
+    <button data-v="minimal">Tối giản</button><button data-v="balanced">Cân bằng</button><button data-v="detailed">Chi tiết</button>
+  </div>
+  <p class="note" id="levelNote"></p>
+
+  <div class="group">Cách báo cho bạn</div>
+  <div class="box">
+    <div class="row"><label for="optText">Chữ hướng dẫn trên khung ngắm</label><input type="checkbox" class="switch" id="optText"></div>
+    <div class="row"><label for="optVoice">Đọc chỉ dẫn bằng giọng nói</label><input type="checkbox" class="switch" id="optVoice"></div>
+  </div>
+
+  <div class="group">Lưới bố cục</div>
+  <div class="seg" id="gridSeg">
+    <button data-v="thirds">1/3</button><button data-v="golden">Tỉ lệ vàng</button><button data-v="off">Tắt</button>
+  </div>
+
+  <div class="group">Tự chụp</div>
+  <div class="box">
+    <div class="row"><label for="optAuto">Tự chụp khi đạt chuẩn</label><input type="checkbox" class="switch" id="optAuto"></div>
+    <div class="row"><span style="font-size:15px">Ngưỡng điểm</span>
+      <div class="stepper"><button id="thrDown" aria-label="Giảm ngưỡng">−</button><span class="num" id="thrVal">90</span><button id="thrUp" aria-label="Tăng ngưỡng">+</button></div>
+    </div>
+  </div>
+  <p class="note">Bật: đạt chuẩn và máy đứng yên 1 giây thì app tự chụp, không mở Camera gốc. Tắt: đạt chuẩn thì bạn chọn Camera gốc hoặc Chụp ngay. Ngưỡng cũng quyết định khi nào vòng nút chụp chuyển xanh.</p>
+
+  <div class="group">Camera gốc</div>
+  <input class="textin" id="optShortcut" aria-label="Tên Shortcut" autocomplete="off" autocapitalize="off" spellcheck="false">
+  <p class="note">Tên phải trùng với Shortcut bạn tạo trong app Phím tắt.</p>
+  <div class="stack"><button class="secondary" id="openSetup">Hướng dẫn cài Shortcut</button></div>
+
+  <p class="note" style="margin-top:22px">Mọi phân tích chạy ngay trên điện thoại. Ảnh không được gửi lên máy chủ, app không dùng API key nào.</p>
+</section>
+
+<!-- Shortcut setup -->
+<section class="sheet" id="setup" hidden aria-labelledby="setupTitle">
+  <header><h2 id="setupTitle">Mở Camera gốc</h2><button id="setupClose">Để sau</button></header>
+  <p class="note" style="margin:0 2px 16px">Cài một lần, khoảng 1 phút. Tên menu có thể hơi khác tùy phiên bản iOS.</p>
+  <div class="step"><span class="n">1</span><div>
+    <h3>Tạo Shortcut “<span id="setupName">Coach Camera</span>”</h3>
+    <p>Mở app Phím tắt → dấu + → Thêm tác vụ → gõ “Camera” và chọn tác vụ mở Camera (chế độ Ảnh, camera sau). Đổi tên Shortcut đúng như trên.</p>
+    <a class="primary" href="shortcuts://" style="display:inline-flex;align-items:center;text-decoration:none">Mở app Phím tắt</a>
+  </div></div>
+  <div class="step"><span class="n">2</span><div>
+    <h3>Bật Lưới và Cân bằng trong Camera</h3>
+    <p>Cài đặt → Camera → bật Lưới và Cân bằng. Sang Camera gốc thì AI không vẽ chỉ dẫn nữa, lưới và thước cân bằng giúp bạn giữ đúng góc vừa canh.</p>
+  </div></div>
+  <div class="step"><span class="n">3</span><div>
+    <h3>Chụp xong thì quay lại</h3>
+    <p>Vuốt thanh ngang dưới đáy màn hình sang phải để về Camera Coach. App sẽ hỏi có muốn chấm điểm ảnh vừa chụp không.</p>
+  </div></div>
+  <div class="stack">
+    <button class="secondary" id="setupTest">Chạy thử Shortcut</button>
+    <button class="primary" id="setupDone">Tôi đã cài xong</button>
+  </div>
+</section>
+
+<!-- Review -->
+<section class="sheet review" id="review" hidden aria-labelledby="reviewTitle">
+  <header><button id="reviewDone">Xong</button><h2 id="reviewTitle">Vừa chụp</h2><span style="width:44px"></span></header>
+  <img id="reviewImg" alt="Ảnh vừa chọn để chấm điểm">
+  <div id="reviewBody"></div>
+  <div class="actions" id="reviewActions"></div>
+</section>
+
+<script type="module">
+/* =========================================================
+   Camera Coach — web
+   AI: MediaPipe Tasks Vision (chạy trong trình duyệt, không cần key)
+   ========================================================= */
+const MP_VERSION = "0.10.14";
+const MP_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}`;
+const MODELS = {
+  pose: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+  object: "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite",
+  classify: "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
+};
+
+const $ = (id) => document.getElementById(id);
+const video = $("video"), canvas = $("ov"), vf = $("vf");
+const ctx = canvas.getContext("2d");
+
+/* ---------------- settings ---------------- */
+const S = (() => {
+  const d = { autoCapture:false, threshold:90, voice:false, text:true, level:"balanced", grid:"thirds",
+              shortcutName:"Coach Camera", shortcutReady:false };
+  try { return Object.assign(d, JSON.parse(localStorage.getItem("coach.settings") || "{}")); } catch { return d; }
+})();
+const saveS = () => { try { localStorage.setItem("coach.settings", JSON.stringify(S)); } catch {} };
+const powerLines = () => S.grid === "golden" ? [0.382, 0.618] : [1/3, 2/3];
+
+const SCENES = [["person","Người"],["landscape","Phong cảnh"],["food","Đồ ăn"],["product","Sản phẩm"]];
+const sceneTitle = (k) => (SCENES.find(s => s[0] === k) || [0,"đang nhận diện"])[1];
+
+/* ---------------- state ---------------- */
+const st = {
+  running:false, stream:null, coachOn:true, mode:"camera",
+  sceneSel:null, detected:null, votes:[],
+  guidance:null, scanning:true, sessionStart:0, smoothed:0,
+  pendingTitle:null, pendingSince:0, alignedSince:null, suppressed:false,
+  countdown:null, cdTimer:null, capturing:false,
+  obs:null, lastRun:0, lastObjRun:0, lastClsRun:0, objects:[], sceneGuess:null,
+  motion:{ roll:0, down:90, steady:false, ok:false },
+  ai:{ status:"idle", pose:null, obj:null, cls:null, vision:null, fileset:null, img:null },
+  handoff:false, zoom:1, lastCaptureMotion:null,
+};
+
+/* ---------------- icons ---------------- */
+const P = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICONS = {
+  scanning: P('<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>'),
+  panLeft: P('<path d="M9 6 3 12l6 6M3 12h14a4 4 0 0 1 4 4"/>'),
+  panRight: P('<path d="m15 6 6 6-6 6M21 12H7a4 4 0 0 0-4 4"/>'),
+  tiltUp: P('<path d="M12 20V4M6 10l6-6 6 6"/>'),
+  tiltDown: P('<path d="M12 4v16M6 14l6 6 6-6"/>'),
+  rotateCCW: P('<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>'),
+  rotateCW: P('<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>'),
+  closer: P('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M11 8v6M8 11h6"/>'),
+  farther: P('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M8 11h6"/>'),
+  stepLeft: P('<path d="M19 12H5M11 6l-6 6 6 6"/>'),
+  stepRight: P('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  angle: P('<path d="M4 20h16M4 20 16 6"/><path d="M10 20a6 6 0 0 0-1.8-4.3"/>'),
+  check: P('<path d="m5 12 5 5 9-10"/>'),
+  search: P('<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/>'),
+  portrait: P('<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>'),
+  loading: P('<path d="M12 3a9 9 0 1 0 9 9"/>'),
+};
+
+/* =========================================================
+   1. Cảm biến: độ nghiêng máy
+   ========================================================= */
+const motionHist = [];
+function onOrientation(e) {
+  if (e.beta == null || e.gamma == null) return;
+  const b = e.beta * Math.PI / 180, g = e.gamma * Math.PI / 180;
+  // Hướng "xuống đất" trong hệ trục của máy (x phải, y lên, z ra khỏi màn hình)
+  const dx = Math.cos(b) * Math.sin(g), dy = -Math.sin(b), dz = -Math.cos(b) * Math.cos(g);
+  const roll = Math.atan2(dx, -dy) * 180 / Math.PI;        // + = máy xoay theo chiều kim đồng hồ
+  const down = Math.acos(Math.max(-1, Math.min(1, -dz))) * 180 / Math.PI; // 0 = camera chĩa thẳng xuống
+  const now = performance.now();
+  motionHist.push({ t:now, dx, dy, dz });
+  while (motionHist.length && now - motionHist[0].t > 600) motionHist.shift();
+  let maxA = 0;
+  for (const m of motionHist) {
+    const dot = Math.max(-1, Math.min(1, m.dx*dx + m.dy*dy + m.dz*dz));
+    maxA = Math.max(maxA, Math.acos(dot) * 180 / Math.PI);
+  }
+  st.motion = { roll, down, steady: motionHist.length > 4 && maxA < 1.5, ok:true };
+}
+async function enableMotion() {
+  try {
+    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+      const r = await DeviceOrientationEvent.requestPermission();
+      if (r !== "granted") { toast("Chưa có quyền cảm biến nên thước cân bằng tạm tắt."); return; }
+    }
+    window.addEventListener("deviceorientation", onOrientation);
+  } catch { /* máy không có cảm biến */ }
+}
+
+/* =========================================================
+   2. Camera
+   ========================================================= */
+async function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error("Trình duyệt này không hỗ trợ camera. Hãy mở bằng Safari.");
+  stopCamera();
+  st.stream = await navigator.mediaDevices.getUserMedia({
+    audio:false,
+    video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1920 }, height:{ ideal:1440 } },
+  });
+  video.srcObject = st.stream;
+  await video.play().catch(() => {});
+  setupZoom();
+}
+function stopCamera() {
+  if (st.stream) st.stream.getTracks().forEach(t => t.stop());
+  st.stream = null;
+}
+function cameraAlive() {
+  return !!st.stream && st.stream.getVideoTracks().some(t => t.readyState === "live");
+}
+function setupZoom() {
+  const box = $("zoom"); box.innerHTML = "";
+  const track = st.stream?.getVideoTracks()[0];
+  const caps = track?.getCapabilities?.();
+  if (!caps || !caps.zoom) return;
+  const opts = [1, 2, 3, 5].filter(z => z >= caps.zoom.min && z <= caps.zoom.max);
+  if (opts.length < 2) return;
+  for (const z of opts) {
+    const b = document.createElement("button");
+    b.textContent = z + "×"; b.setAttribute("aria-pressed", String(z === st.zoom));
+    b.setAttribute("aria-label", "Zoom " + z + "×");
+    b.onclick = async () => {
+      try { await track.applyConstraints({ advanced:[{ zoom:z }] }); st.zoom = z; } catch {}
+      [...box.children].forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+    };
+    box.appendChild(b);
+  }
+}
+
+/* =========================================================
+   3. AI (MediaPipe)
+   ========================================================= */
+async function loadAI() {
+  if (st.ai.status === "loading" || st.ai.status === "ready") return;
+  st.ai.status = "loading";
+  try {
+    const vision = await import(`${MP_BASE}/vision_bundle.mjs`);
+    const fileset = await vision.FilesetResolver.forVisionTasks(`${MP_BASE}/wasm`);
+    st.ai.vision = vision; st.ai.fileset = fileset;
+    const make = async (Klass, model, extra, mode = "VIDEO") => {
+      try {
+        return await Klass.createFromOptions(fileset, { baseOptions:{ modelAssetPath:model, delegate:"GPU" }, runningMode:mode, ...extra });
+      } catch {
+        return await Klass.createFromOptions(fileset, { baseOptions:{ modelAssetPath:model, delegate:"CPU" }, runningMode:mode, ...extra });
+      }
+    };
+    st.ai.make = make;
+    st.ai.pose = await make(vision.PoseLandmarker, MODELS.pose, { numPoses:3, minPoseDetectionConfidence:0.5 });
+    st.ai.status = "ready";   // đủ để hướng dẫn chụp người; phần còn lại tải tiếp
+    st.ai.obj = await make(vision.ObjectDetector, MODELS.object, { maxResults:5, scoreThreshold:0.35 });
+    st.ai.cls = await make(vision.ImageClassifier, MODELS.classify, { maxResults:5 });
+  } catch (err) {
+    console.warn("AI load failed", err);
+    if (st.ai.status !== "ready") st.ai.status = "failed";
+  }
+}
+
+/* Chuyển tọa độ chuẩn hóa của ảnh gốc → tọa độ chuẩn hóa của khung đang hiển thị (object-fit: cover) */
+function makeMapper(srcW, srcH, dstW, dstH) {
+  const s = Math.max(dstW / srcW, dstH / srcH);
+  const dw = srcW * s, dh = srcH * s, ox = (dstW - dw) / 2, oy = (dstH - dh) / 2;
+  const pt = (x, y) => ({ x:(ox + x * dw) / dstW, y:(oy + y * dh) / dstH });
+  const rect = (x, y, w, h) => { const a = pt(x, y), b = pt(x + w, y + h); return { x:a.x, y:a.y, w:b.x - a.x, h:b.y - a.y }; };
+  return { pt, rect, aspect: dstW / dstH, crop:{ sx:-ox / s, sy:-oy / s, sw:dstW / s, sh:dstH / s } };
+}
+
+function personFromLandmarks(lm, map) {
+  const get = (i) => {
+    const p = lm[i];
+    if (!p || (p.visibility !== undefined && p.visibility < 0.5)) return null;
+    return map.pt(p.x, p.y);
+  };
+  const pts = [];
+  for (let i = 0; i < lm.length; i++) { const p = get(i); if (p) pts.push(p); }
+  if (pts.length < 5) return null;
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const body = { x:Math.min(...xs), y:Math.min(...ys) };
+  body.w = Math.max(...xs) - body.x; body.h = Math.max(...ys) - body.y;
+  const nose = get(0), le = get(2), re = get(5), lear = get(7), rear = get(8);
+  let face = null;
+  if (nose) {
+    let fw = null;
+    if (lear && rear) fw = Math.abs(lear.x - rear.x) * 1.15;
+    else if (le && re) fw = Math.abs(le.x - re.x) * 2.4;
+    else if (lear || rear) fw = Math.abs((lear || rear).x - nose.x) * 2;
+    if (fw && fw > 0.004) {
+      const eyeY = (le && re) ? (le.y + re.y) / 2 : nose.y;
+      const cy = (eyeY + nose.y) / 2;
+      const fh = fw * 1.3 * map.aspect;
+      face = { x:nose.x - fw / 2, y:cy - fh / 2, w:fw, h:fh };
+      const top = face.y - face.h * 0.15;
+      if (top < body.y) { body.h += body.y - top; body.y = top; }
+    }
+  }
+  return { face, body };
+}
+
+const FOOD_WORDS = ["banana","apple","sandwich","orange","broccoli","carrot","hot dog","hotdog","pizza","donut","cake","bowl",
+  "cup","wine","plate","burger","cheeseburger","ice cream","espresso","carbonara","guacamole","consomme","hot pot","trifle",
+  "burrito","bagel","pretzel","meat loaf","potpie","loaf","mashed potato","cauliflower","strawberry","lemon","pineapple",
+  "pomegranate","eggnog","chocolate","dough","bakery","restaurant","soup","noodle","dining table"];
+const LAND_WORDS = ["seashore","lakeside","alp","valley","volcano","cliff","promontory","sandbar","geyser","breakwater","dock",
+  "pier","bridge","viaduct","castle","palace","monastery","church","mosque","stupa","boathouse","coral reef","mountain",
+  "lakeshore","beach","dam"];
+const has = (list, s) => list.some(w => s.includes(w));
+
+function buildObservation(poseRes, objRes, clsRes, map, srcW, srcH) {
+  const obs = { people:[], objects:[], sceneGuess:null };
+  for (const lm of poseRes?.landmarks || []) {
+    const p = personFromLandmarks(lm, map); if (p) obs.people.push(p);
+  }
+  for (const d of objRes?.detections || []) {
+    const c = d.categories?.[0]; const bb = d.boundingBox; if (!c || !bb) continue;
+    const r = map.rect(bb.originX / srcW, bb.originY / srcH, bb.width / srcW, bb.height / srcH);
+    obs.objects.push({ ...r, label:c.categoryName.toLowerCase(), score:c.score });
+  }
+  let food = 0, land = 0;
+  for (const o of obs.objects) if (has(FOOD_WORDS, o.label)) food += o.score;
+  for (const c of clsRes?.classifications?.[0]?.categories || []) {
+    const n = c.categoryName.toLowerCase();
+    if (has(FOOD_WORDS, n)) food += c.score; else if (has(LAND_WORDS, n)) land += c.score;
+  }
+  if (clsRes || objRes) obs.sceneGuess = food > 0.35 && food >= land ? "food" : land > 0.3 ? "landscape" : "product";
+  return obs;
+}
+const hasPerson = (o) => o.people.some(p => (p.face && p.face.w > 0.035) || p.body.h > 0.3);
+const area = (r) => r.w * r.h;
+function salient(o) {
+  const c = o.objects.filter(x => x.label !== "person" && x.label !== "dining table");
+  return c.sort((a, b) => area(b) * b.score - area(a) * a.score)[0] || null;
+}
+
+function analyzeFrame(now) {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const map = makeMapper(vw, vh, vf.clientWidth, vf.clientHeight);
+  const poseRes = st.ai.pose ? st.ai.pose.detectForVideo(video, now) : null;
+  let objRes = null, clsRes = null;
+  if (st.ai.obj && now - st.lastObjRun > 300) { objRes = st.ai.obj.detectForVideo(video, now); st.lastObjRun = now; }
+  if (st.ai.cls && now - st.lastClsRun > 1000) { clsRes = st.ai.cls.classifyForVideo(video, now); st.lastClsRun = now; }
+  const obs = buildObservation(poseRes, objRes, clsRes, map, vw, vh);
+  if (objRes) st.objects = obs.objects; else obs.objects = st.objects;   // giữ kết quả vật thể giữa các lần chạy
+  return obs;
+}
+
+/* =========================================================
+   4. Bộ não bố cục (giống bản Swift)
+   ========================================================= */
+const deg = (a) => `${Math.round(a)}°`;
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const nearest = (vals, x) => vals.reduce((a, b) => Math.abs(b - x) < Math.abs(a - x) ? b : a);
+const placeName = (tx) => Math.abs(tx - 0.5) < 0.01 ? "giữa khung" : tx < 0.5 ? "đường lưới bên trái" : "đường lưới bên phải";
+const offset = (r, dx, dy) => ({ x:r.x + dx, y:r.y + dy, w:r.w, h:r.h });
+
+function evaluate(obs, motion, scene, mode) {
+  const g = { score:0, aligned:false, blocking:false, title:"", subtitle:null, tips:[], speech:null, icon:"check",
+              subject:null, anchor:null, target:null, targetRect:null, ground:false, tilt:null, camAngle:null, checks:[] };
+  const issues = [], checks = [];
+  const subjectMode = scene === "person" && mode === "subject";
+  const L = powerLines();
+
+  // 1. cân bằng
+  if (motion && motion.ok) {
+    const flat = motion.down < 35;
+    if (!flat) {
+      const roll = motion.roll;
+      if (Math.abs(roll) > 45) {
+        Object.assign(g, { title:"Cầm máy dọc để AI hướng dẫn", subtitle:"Bản này hỗ trợ khung hình dọc", icon:"portrait", blocking:true });
+        return g;
+      }
+      g.tilt = roll;
+      const a = Math.abs(roll);
+      if (a >= 1) {
+        const cw = roll > 0;
+        issues.push({ p:Math.min(30, (a - 0.5) * 7),
+          t: cw ? "Xoay nhẹ máy ngược chiều kim đồng hồ" : "Xoay nhẹ máy theo chiều kim đồng hồ",
+          s: `Máy đang nghiêng ${deg(a)}, nâng cạnh ${cw ? "phải" : "trái"} lên`, i: cw ? "rotateCCW" : "rotateCW" });
+      }
+      checks.push({ ok:a < 1.5, t: a < 1.5 ? "Máy cân bằng" : `Ảnh nghiêng ${deg(a)}` });
+    }
+  }
+
+  // 2. chủ thể
+  let anchor = null, target = null, subj = null, ghost = null, place = "điểm mạnh của khung", weight = 1, size = null, noun;
+  if (scene === "person") {
+    noun = "người";
+    const people = obs.people.slice().sort((a, b) => (b.face ? b.face.w : 0) - (a.face ? a.face.w : 0) || area(b.body) - area(a.body));
+    const main = people[0];
+    if (main && main.face) {
+      const f = main.face;
+      const group = people.filter(p => p.face && p.face.w > f.w * 0.5).map(p => p.face);
+      const r = group.reduce((u, q) => { const x = Math.min(u.x, q.x), y = Math.min(u.y, q.y);
+        return { x, y, w:Math.max(u.x + u.w, q.x + q.w) - x, h:Math.max(u.y + u.h, q.y + q.h) - y }; }, f);
+      const a = { x:r.x + r.w / 2, y:r.y + r.h / 2 };
+      const close = f.w > 0.28;
+      const tx = (group.length >= 2 || close) ? 0.5 : nearest(L, a.x);
+      const ty = close ? 0.42 : L[0] + 0.04;
+      anchor = a; target = { x:tx, y:ty }; subj = r; place = placeName(tx);
+      ghost = offset(main.body, tx - a.x, ty - a.y);
+      if (f.w > 0.5) size = "big";
+      else if (f.w < 0.045 && main.body.h < 0.45) size = "small";
+      if (r.y < 0.015) issues.push({ p:20, t:"Ngẩng máy lên một chút", s:"Đầu đang sát mép trên khung", i:"tiltUp" });
+    } else if (main) {
+      const b = main.body, a = { x:b.x + b.w / 2, y:b.y + b.h * 0.12 };
+      const tx = nearest(L, a.x), ty = L[0];
+      anchor = a; target = { x:tx, y:ty }; subj = b; place = placeName(tx);
+      ghost = offset(b, tx - a.x, ty - a.y);
+    }
+  } else if (scene === "landscape") {
+    noun = "điểm nhấn"; weight = 0.5;
+    const s = salient(obs);
+    if (s && area(s) < 0.35) {
+      anchor = { x:s.x + s.w / 2, y:s.y + s.h / 2 }; subj = s;
+      target = { x:nearest(L, anchor.x), y:nearest(L, anchor.y) }; place = "giao điểm lưới gần nhất";
+    }
+  } else {
+    noun = scene === "food" ? "món ăn" : "sản phẩm";
+    const s = salient(obs);
+    if (s) {
+      anchor = { x:s.x + s.w / 2, y:s.y + s.h / 2 }; subj = s; target = { x:0.5, y:0.5 }; place = "giữa khung";
+      const ar = area(s);
+      if (scene === "food") { if (ar < 0.12) size = "small"; else if (ar > 0.9) size = "big"; }
+      else { if (ar < 0.1) size = "small"; else if (ar > 0.75) size = "big"; }
+    }
+    if (scene === "food" && motion && motion.ok) {
+      const down = motion.down; g.camAngle = down;
+      if (down < 25) {
+        if (down > 6) issues.push({ p:Math.min(25, (down - 6) * 2.5), t:"Đưa máy thẳng trên món ăn", s:`Chụp từ trên xuống, đang lệch ${deg(down)}`, i:"angle" });
+        checks.push({ ok:down <= 8, t: down <= 8 ? "Góc từ trên xuống chuẩn" : `Góc từ trên xuống lệch ${deg(down)}` });
+      } else {
+        const diff = down - 45;
+        if (Math.abs(diff) > 12) issues.push({ p:Math.min(25, (Math.abs(diff) - 12) * 1.5),
+          t: diff > 0 ? "Chúc máy xuống thêm" : "Nghiêng máy ra một chút", s:"Góc chéo khoảng 45° giúp món ăn có chiều sâu", i:"angle" });
+        checks.push({ ok:Math.abs(diff) <= 15, t: Math.abs(diff) <= 15 ? "Góc chéo 45° đẹp" : "Góc chụp chưa đẹp, thử 45° hoặc từ trên xuống" });
+      }
+    }
+  }
+
+  // 3. vị trí
+  if (anchor && target) {
+    const dx = target.x - anchor.x, dy = target.y - anchor.y, d = Math.hypot(dx, dy);
+    const p = d < 0.03 ? 0 : Math.min(45, (d - 0.03) * 230) * weight;
+    if (p > 0) {
+      const small = d < 0.1, bit = small ? " một chút" : "";
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        const right = dx > 0; // chủ thể cần sang phải trong khung → xoay máy sang trái
+        if (subjectMode) {
+          issues.push({ p, t:`Mời bạn ấy dịch sang ${right ? "phải" : "trái"}${small ? " một chút" : " 1–2 bước"}`,
+            s:`Về phía tay ${right ? "phải" : "trái"} của bạn, bóng mờ là chỗ đứng`, i: right ? "stepRight" : "stepLeft",
+            sp:`Bạn bước sang ${right ? "trái" : "phải"}${small ? " một chút" : " một hai bước"}` });
+        } else {
+          issues.push({ p, t:`Xoay máy sang ${right ? "trái" : "phải"}${bit}`, s:`Đưa ${noun} vào ${place}`, i: right ? "panLeft" : "panRight" });
+        }
+      } else {
+        const downward = dy > 0; // chủ thể cần xuống thấp hơn → ngẩng máy lên
+        issues.push({ p, t: downward ? `Ngẩng máy lên${bit}` : `Chúc máy xuống${bit}`, s:`Đưa ${noun} vào ${place}`, i: downward ? "tiltUp" : "tiltDown" });
+      }
+    }
+    checks.push({ ok:d < 0.06, t: d < 0.06 ? `${cap(noun)} nằm ở ${place}` : `${cap(noun)} lệch khỏi ${place}` });
+  } else if (scene !== "landscape") {
+    const m = scene === "person" ? "Chưa thấy người trong khung" : "Chưa rõ chủ thể chính";
+    issues.push({ p: scene === "person" ? 40 : 20, t:m, s: scene === "person" ? "Hướng máy về phía người cần chụp" : `Đưa ${noun} vào giữa khung`, i:"search" });
+    checks.push({ ok:false, t:m });
+    g.blocking = true;
+  }
+
+  // 4. kích thước
+  if (size === "small") {
+    issues.push({ p:15, t:"Tiến lại gần hơn", s: scene === "person" ? "Hoặc zoom 2× cho chân dung" : `${cap(noun)} đang quá nhỏ trong khung`,
+      i:"closer", sp: subjectMode ? "Bạn tiến lại gần máy một chút" : null });
+    checks.push({ ok:false, t:`${cap(noun)} hơi nhỏ, lần sau tiến lại gần` });
+  } else if (size === "big") {
+    issues.push({ p:15, t:"Lùi ra một chút", s:"Khung hình đang cắt quá sát", i:"farther", sp: subjectMode ? "Bạn lùi ra sau một chút" : null });
+    checks.push({ ok:false, t:"Khung hình quá chật" });
+  } else if (anchor) {
+    checks.push({ ok:true, t:`Kích thước ${noun} vừa khung` });
+  }
+
+  // 5. tổng hợp
+  const total = issues.reduce((s, i) => s + i.p, 0);
+  g.score = Math.max(0, Math.min(100, Math.round(100 - total)));
+  issues.sort((a, b) => b.p - a.p);
+  if (issues[0]) { const t = issues[0]; g.title = t.t; g.subtitle = t.s; g.icon = t.i; g.speech = t.sp || null; }
+  else { g.title = "Gần chuẩn rồi"; g.subtitle = "Giữ nguyên góc máy"; g.icon = "check"; }
+  g.tips = issues.slice(1, 3).map(i => i.t);
+  g.anchor = anchor; g.target = target; g.subject = subj;
+  g.targetRect = ghost || (subj && anchor && target ? offset(subj, target.x - anchor.x, target.y - anchor.y) : null);
+  g.ground = subjectMode;
+  g.checks = checks;
+  return g;
+}
+
+/* =========================================================
+   5. Điều phối: xử lý từng khung hình
+   ========================================================= */
+const activeScene = () => st.sceneSel || st.detected || "product";
+const scanningGuidance = () => ({ scanning:true, score:0, aligned:false, blocking:true, title:"Đang đọc khung hình…",
+  subtitle:"Tìm người, chủ thể và độ nghiêng máy", tips:[], icon:"scanning", checks:[] });
+
+function updateScene(obs) {
+  const guess = hasPerson(obs) ? "person" : obs.sceneGuess;
+  if (!guess) return;
+  st.votes.push(guess); if (st.votes.length > 3) st.votes.shift();
+  const last2 = st.votes.slice(-2);
+  if (last2.length === 2 && last2.every(v => v === guess) && st.detected !== guess) { st.detected = guess; renderChips(); }
+}
+
+function handle(obs) {
+  const now = performance.now();
+  st.obs = obs;
+  updateScene(obs);
+  const scanning = now - st.sessionStart < 800;
+  st.scanning = scanning;
+  if (scanning) { st.guidance = scanningGuidance(); return; }
+
+  let g;
+  if (st.ai.status !== "ready") {
+    g = evaluate({ people:[], objects:[] }, st.motion, "landscape", st.mode);
+    g.blocking = true;
+    if (g.icon === "check") {
+      g.icon = st.ai.status === "failed" ? "search" : "loading";
+      g.title = st.ai.status === "failed" ? "Không tải được AI nhận diện" : "Đang tải AI nhận diện…";
+      g.subtitle = st.ai.status === "failed" ? "Kiểm tra mạng rồi mở lại app. Thước cân bằng vẫn dùng được." : "Lần đầu cần tải khoảng 10 MB, lần sau nhanh hơn";
+    }
+  } else {
+    g = evaluate(obs, st.motion, activeScene(), st.mode);
+  }
+
+  st.smoothed = st.smoothed === 0 ? g.score : st.smoothed * 0.7 + g.score * 0.3;
+  g.score = Math.round(st.smoothed);
+  const aligned = !g.blocking && g.score >= S.threshold;
+  g.aligned = aligned;
+  const prev = st.guidance || {};
+  if (aligned) {
+    g.title = "Chuẩn rồi, giữ yên tay";
+    g.subtitle = S.autoCapture ? "App sẽ tự chụp khi máy đứng yên" : "Chọn Camera gốc hoặc Chụp ngay";
+    g.icon = "check"; g.tips = [];
+    g.speech = st.mode === "subject" ? "Tốt lắm, giữ nguyên nhé" : null;
+  } else if (!prev.aligned && prev.title && g.title !== prev.title) {
+    // chỉ đổi câu khi câu mới ổn định ~0,5 giây
+    if (st.pendingTitle !== g.title) { st.pendingTitle = g.title; st.pendingSince = now; }
+    if (now - st.pendingSince < 500) Object.assign(g, { title:prev.title, subtitle:prev.subtitle, icon:prev.icon, tips:prev.tips, speech:prev.speech });
+  }
+  st.guidance = g;
+  trackAlignment(aligned, now);
+  if (S.voice) say(st.mode === "subject" ? (g.speech || g.title) : g.title);
+}
+
+function trackAlignment(aligned, now) {
+  if (!aligned) {
+    st.alignedSince = null; st.suppressed = false;
+    if (st.countdown != null) cancelCountdown();
+    return;
+  }
+  if (st.alignedSince == null || !st.motion.steady && st.motion.ok) st.alignedSince = now;
+  if (now - st.alignedSince < 1000) return;
+  if (S.autoCapture && st.countdown == null && !st.capturing && !st.suppressed) startCountdown();
+}
+
+function startCountdown() {
+  st.countdown = 2; renderControls();
+  st.cdTimer = setInterval(() => {
+    st.countdown -= 1;
+    if (st.countdown <= 0) { cancelCountdown(); capture(); } else renderControls();
+  }, 1000);
+}
+function cancelCountdown(byUser = false) {
+  clearInterval(st.cdTimer); st.cdTimer = null; st.countdown = null;
+  if (byUser) st.suppressed = true;
+  renderControls();
+}
+
+/* =========================================================
+   6. Vòng lặp + vẽ
+   ========================================================= */
+function loop() {
+  if (!st.running) return;
+  requestAnimationFrame(loop);
+  const now = performance.now();
+  if (now - st.lastRun < 100 || video.readyState < 2 || !video.videoWidth) return;
+  st.lastRun = now;
+  if (st.coachOn && $("review").hidden) {
+    let obs = { people:[], objects:[] };
+    try { if (st.ai.status === "ready") obs = analyzeFrame(now); } catch (e) { console.warn(e); }
+    handle(obs);
+  }
+  render();
+}
+
+function sizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = vf.clientWidth, h = vf.clientHeight;
+  if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { w, h };
+}
+
+function draw() {
+  const { w, h } = sizeCanvas();
+  ctx.clearRect(0, 0, w, h);
+  if (S.grid !== "off") {
+    ctx.strokeStyle = "rgba(242,239,230,.28)"; ctx.lineWidth = 1; ctx.beginPath();
+    for (const v of powerLines()) { ctx.moveTo(w * v, 0); ctx.lineTo(w * v, h); ctx.moveTo(0, h * v); ctx.lineTo(w, h * v); }
+    ctx.stroke();
+  }
+  if (!st.coachOn || !st.guidance) return;
+  const g = st.guidance;
+  const R = (r) => [r.x * w, r.y * h, r.w * w, r.h * h];
+  const rr = (x, y, ww, hh, rad) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, ww, hh, rad) : ctx.rect(x, y, ww, hh); };
+
+  if (st.scanning) {
+    if (!st.obs) return;
+    ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5;
+    for (const p of st.obs.people) {
+      ctx.strokeStyle = "rgba(242,239,230,.6)"; rr(...R(p.body), 10); ctx.stroke();
+      if (p.face) { ctx.strokeStyle = "rgba(242,239,230,.9)"; rr(...R(p.face), 6); ctx.stroke(); }
+    }
+    if (!st.obs.people.length) for (const o of st.obs.objects) { ctx.strokeStyle = "rgba(242,239,230,.6)"; rr(...R(o), 10); ctx.stroke(); }
+    ctx.setLineDash([]); return;
+  }
+
+  const accent = g.aligned ? "#8EC9FF" : "#F2A93B";
+  if (g.subject) {
+    const [x, y, ww, hh] = R(g.subject), l = Math.min(10, ww / 3, hh / 3);
+    ctx.strokeStyle = g.aligned ? "#8EC9FF" : "#F2EFE6"; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.beginPath();
+    ctx.moveTo(x, y + l); ctx.lineTo(x, y); ctx.lineTo(x + l, y);
+    ctx.moveTo(x + ww - l, y); ctx.lineTo(x + ww, y); ctx.lineTo(x + ww, y + l);
+    ctx.moveTo(x, y + hh - l); ctx.lineTo(x, y + hh); ctx.lineTo(x + l, y + hh);
+    ctx.moveTo(x + ww - l, y + hh); ctx.lineTo(x + ww, y + hh); ctx.lineTo(x + ww, y + hh - l);
+    ctx.stroke();
+  }
+  if (!g.aligned && g.targetRect) {
+    const [x, y, ww, hh] = R(g.targetRect);
+    ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.setLineDash([6, 5]); rr(x, y, ww, hh, 8); ctx.stroke(); ctx.setLineDash([]);
+    if (g.ground) {
+      ctx.fillStyle = "rgba(242,169,59,.35)"; ctx.beginPath();
+      ctx.ellipse(x + ww / 2, Math.min(y + hh, h - 10), ww * 0.6, 10, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  if (!g.aligned && g.anchor && g.target) {
+    const ax = g.anchor.x * w, ay = g.anchor.y * h, tx = g.target.x * w, ty = g.target.y * h;
+    ctx.fillStyle = accent; ctx.beginPath(); ctx.arc(tx, ty, 4, 0, Math.PI * 2); ctx.fill();
+    if (Math.hypot(tx - ax, ty - ay) > 28) {
+      const an = Math.atan2(ty - ay, tx - ax);
+      const sx = ax + Math.cos(an) * 14, sy = ay + Math.sin(an) * 14, ex = tx - Math.cos(an) * 10, ey = ty - Math.sin(an) * 10;
+      ctx.strokeStyle = accent; ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath();
+      ctx.moveTo(sx, sy); ctx.lineTo(ex, ey);
+      ctx.moveTo(ex - 9 * Math.cos(an - Math.PI / 6), ey - 9 * Math.sin(an - Math.PI / 6)); ctx.lineTo(ex, ey);
+      ctx.lineTo(ex - 9 * Math.cos(an + Math.PI / 6), ey - 9 * Math.sin(an + Math.PI / 6));
+      ctx.stroke();
+    }
+  }
+  if (g.tilt != null) {
+    const cx = w / 2, cy = h * 0.84, ok = Math.abs(g.tilt) < 1, col = ok ? "#8EC9FF" : "#F2A93B";
+    ctx.lineWidth = 2; ctx.strokeStyle = ok ? "#8EC9FF" : "rgba(242,239,230,.9)"; ctx.beginPath();
+    ctx.moveTo(cx - 110, cy); ctx.lineTo(cx - 58, cy); ctx.moveTo(cx + 58, cy); ctx.lineTo(cx + 110, cy); ctx.stroke();
+    const rad = -g.tilt * Math.PI / 180;   // máy xoay phải → đường chân trời trên màn hình xoay trái
+    ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.beginPath();
+    ctx.moveTo(cx - Math.cos(rad) * 50, cy - Math.sin(rad) * 50); ctx.lineTo(cx + Math.cos(rad) * 50, cy + Math.sin(rad) * 50); ctx.stroke();
+    ctx.fillStyle = col; ctx.font = "500 13px 'IBM Plex Mono', monospace"; ctx.textAlign = "center";
+    ctx.fillText(deg(Math.abs(g.tilt)), cx, cy + 24);
+  }
+  if (g.camAngle != null) {
+    const ok = g.camAngle <= 8 || Math.abs(g.camAngle - 45) <= 12;
+    ctx.fillStyle = ok ? "#8EC9FF" : "#F2A93B"; ctx.font = "500 13px 'IBM Plex Mono', monospace"; ctx.textAlign = "center";
+    ctx.fillText(`Góc máy ${deg(g.camAngle)}`, w / 2, h * 0.84 + (g.tilt != null ? 44 : 0));
+  }
+}
+
+let lastCardKey = "";
+function render() {
+  draw();
+  const g = st.guidance;
+  $("hud").hidden = !st.running;
+  $("coachBtn").className = "pill coach-pill hit" + (!st.coachOn ? " off" : g && g.aligned ? " ok" : "");
+  const showCard = st.coachOn && S.text && g;
+  $("card").hidden = !showCard;
+  $("chips").hidden = !st.coachOn;
+  if (showCard) {
+    const key = [g.title, g.subtitle, g.icon, g.aligned, S.level, g.tips.join("|")].join("§");
+    if (key !== lastCardKey) {
+      lastCardKey = key;
+      $("card").className = "card" + (g.scanning ? " scan" : g.aligned ? " ok" : "");
+      $("cardIc").innerHTML = ICONS[g.icon] || ICONS.check;
+      $("cardT1").textContent = g.title;
+      $("cardT2").textContent = S.level !== "minimal" && g.subtitle ? g.subtitle : "";
+      $("cardT2").hidden = !(S.level !== "minimal" && g.subtitle);
+      $("cardTips").textContent = S.level === "detailed" && g.tips.length ? g.tips.map(t => "· " + t).join("  ") : "";
+      $("cardTips").hidden = !(S.level === "detailed" && g.tips.length);
+    }
+  }
+  $("speakBtn").hidden = st.mode !== "subject";
+  // vòng điểm
+  const score = st.coachOn && g && !g.scanning ? g.score : 0;
+  $("ring").setAttribute("stroke-dasharray", `${(score / 100 * 251.3).toFixed(1)} 252`);
+  $("ring").setAttribute("stroke", g && g.aligned ? "#8EC9FF" : "#F2A93B");
+  $("ring").setAttribute("opacity", score > 0 ? "1" : "0");
+  renderControls();
+  const sl = $("scoreline");
+  if (!st.running) sl.textContent = "";
+  else if (!st.coachOn) sl.textContent = "AI Coach đang tắt";
+  else if (!g || g.scanning) sl.textContent = "Nút chụp dùng được ngay, AI không chặn khoảnh khắc";
+  else sl.innerHTML = `Bố cục <span class="num" style="color:${g.aligned ? "var(--good)" : "var(--guide)"}">${g.score}</span> / 100`;
+}
+
+function renderControls() {
+  const g = st.guidance;
+  const choice = st.running && st.coachOn && g && g.aligned && !S.autoCapture && st.countdown == null && !st.capturing;
+  $("choice").hidden = !choice;
+  $("controls").hidden = choice;
+  $("shutterCore").textContent = st.countdown != null ? String(st.countdown) : "";
+}
+
+function renderChips() {
+  const box = $("chips"); box.innerHTML = "";
+  const mk = (label, pressed, onClick, sparkle) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.setAttribute("aria-pressed", String(pressed));
+    b.innerHTML = (sparkle ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.3L20 10l-5.8 1.7L12 18l-2.2-6.3L4 10l5.8-1.7z"/></svg>' : "");
+    b.appendChild(document.createTextNode(label));
+    b.onclick = onClick; box.appendChild(b);
+  };
+  mk(`Tự động: ${sceneTitle(st.detected)}`, st.sceneSel == null, () => { st.sceneSel = null; renderChips(); }, true);
+  for (const [k, t] of SCENES) mk(t, st.sceneSel === k, () => { st.sceneSel = k; renderChips(); }, false);
+}
+
+/* =========================================================
+   7. Chụp trong app + chấm điểm ảnh
+   ========================================================= */
+async function capture() {
+  if (st.capturing || !st.running || !video.videoWidth) return;
+  cancelCountdown(); st.capturing = true; renderControls();
+  const blink = $("blink"); blink.classList.add("on"); setTimeout(() => blink.classList.remove("on"), 120);
+  try {
+    const map = makeMapper(video.videoWidth, video.videoHeight, vf.clientWidth, vf.clientHeight);
+    const { sx, sy, sw, sh } = map.crop;
+    const c = document.createElement("canvas");
+    c.width = Math.round(sw); c.height = Math.round(sh);
+    c.getContext("2d").drawImage(video, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.95));
+    st.lastCaptureMotion = { ...st.motion };
+    openReview(blob, "camera", st.lastCaptureMotion);
+  } catch (e) {
+    toast("Không chụp được: " + e.message);
+  } finally {
+    st.capturing = false; renderControls();
+  }
+}
+
+async function ensureImageModels() {
+  const ai = st.ai;
+  if (ai.img) return ai.img;
+  if (!ai.vision) await loadAI();
+  if (!ai.make) throw new Error("AI chưa tải được");
+  ai.img = {
+    pose: await ai.make(ai.vision.PoseLandmarker, MODELS.pose, { numPoses:3 }, "IMAGE"),
+    obj: await ai.make(ai.vision.ObjectDetector, MODELS.object, { maxResults:5, scoreThreshold:0.35 }, "IMAGE"),
+    cls: await ai.make(ai.vision.ImageClassifier, MODELS.classify, { maxResults:5 }, "IMAGE"),
+  };
+  return ai.img;
+}
+
+async function scoreImage(img, motion) {
+  const m = await ensureImageModels();
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const map = makeMapper(W, H, W, H);
+  const obs = buildObservation(m.pose.detect(img), m.obj.detect(img), m.cls.classify(img), map, W, H);
+  const scene = st.sceneSel || (hasPerson(obs) ? "person" : obs.sceneGuess || "product");
+  const g = evaluate(obs, motion, scene, "camera");
+  return { score:g.score, checks:g.checks, scene };
+}
+
+let reviewBlob = null, reviewURL = null;
+function openReview(blob, source, motion) {
+  reviewBlob = blob;
+  if (reviewURL) URL.revokeObjectURL(reviewURL);
+  reviewURL = URL.createObjectURL(blob);
+  $("reviewTitle").textContent = source === "camera" ? "Vừa chụp" : "Ảnh đã chọn";
+  $("banner").hidden = true;
+  const img = $("reviewImg");
+  $("reviewBody").innerHTML = `<p class="note" style="margin-top:16px">Đang chấm điểm bố cục…</p>`;
+  const act = $("reviewActions"); act.innerHTML = "";
+  const btn = (label, cls, fn) => { const b = document.createElement("button"); b.className = cls; b.textContent = label; b.onclick = fn; act.appendChild(b); return b; };
+  if (source === "camera") {
+    btn("Chụp lại", "secondary", closeReview);
+    btn("Lưu ảnh", "primary light", saveReview);
+  } else {
+    btn("Quay lại canh góc", "primary light", closeReview);
+  }
+  $("review").hidden = false; cancelCountdown();
+  img.onload = async () => {
+    try {
+      const r = await scoreImage(img, motion);
+      const verdict = r.score >= 90 ? "Bố cục rất tốt" : r.score >= 75 ? "Bố cục khá ổn" : r.score >= 50 ? "Còn chỉnh được thêm" : "Bố cục chưa đẹp";
+      const ok = '<svg viewBox="0 0 24 24" fill="none" stroke="#8EC9FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>';
+      const bad = '<svg viewBox="0 0 24 24" fill="none" stroke="#F2A93B" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>';
+      const esc = (s) => s.replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
+      $("reviewBody").innerHTML = `
+        <div class="verdict"><span class="big" style="color:${r.score >= 85 ? "var(--good)" : "var(--guide)"}">${r.score}</span>
+          <div><b>${verdict}</b><small>${esc(sceneTitle(r.scene))}, chấm ngay trên máy</small></div></div>
+        <ul class="checks">${r.checks.map(c => `<li>${c.ok ? ok : bad}<span>${esc(c.t)}</span></li>`).join("")}</ul>
+        ${motion ? "" : '<p class="note">Ảnh từ thư viện không có dữ liệu cảm biến nên không chấm độ nghiêng.</p>'}`;
+    } catch (e) {
+      $("reviewBody").innerHTML = `<p class="note" style="margin-top:16px">Không chấm được ảnh này: AI chưa tải xong. Kiểm tra mạng rồi thử lại.</p>`;
+    }
+  };
+  img.src = reviewURL;
+}
+function closeReview() {
+  $("review").hidden = true;
+  st.sessionStart = performance.now(); st.smoothed = 0; st.guidance = scanningGuidance(); st.alignedSince = null;
+}
+async function saveReview() {
+  if (!reviewBlob) return;
+  const file = new File([reviewBlob], `camera-coach-${Date.now()}.jpg`, { type:"image/jpeg" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files:[file] })) {
+      await navigator.share({ files:[file] });   // chọn "Lưu hình ảnh" trong bảng chia sẻ
+      return;
+    }
+  } catch (e) { if (e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = reviewURL; a.download = file.name; a.click();
+}
+
+/* =========================================================
+   8. Camera gốc qua Shortcut
+   ========================================================= */
+function openNative() {
+  if (!S.shortcutReady) { openSheet("setup"); return; }
+  runShortcut();
+}
+function runShortcut() {
+  cancelCountdown();
+  st.handoff = true;
+  const a = document.createElement("a");
+  a.href = "shortcuts://run-shortcut?name=" + encodeURIComponent(S.shortcutName);
+  a.click();
+}
+
+/* =========================================================
+   9. Giọng nói
+   ========================================================= */
+let lastSaid = "", lastSaidAt = 0;
+function say(text, force = false) {
+  if (!("speechSynthesis" in window) || !text) return;
+  const now = Date.now();
+  if (!force && (text === lastSaid || now - lastSaidAt < 2500)) return;
+  lastSaid = text; lastSaidAt = now;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "vi-VN"; u.rate = 1;
+  const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith("vi"));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+
+/* =========================================================
+   10. Giao diện: nút, sheet, cài đặt
+   ========================================================= */
+let toastTimer = null;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3200);
+}
+function openSheet(id) {
+  if (id === "setup") $("setupName").textContent = S.shortcutName;
+  if (id === "settings") syncSettingsUI();
+  $(id).hidden = false; $(id).scrollTop = 0;
+}
+function closeSheet(id) { $(id).hidden = true; }
+
+function syncTopBar() {
+  const a = $("autoBtn"); a.classList.toggle("on", S.autoCapture); a.setAttribute("aria-pressed", String(S.autoCapture));
+  a.setAttribute("aria-label", S.autoCapture ? "Tự chụp đang bật" : "Tự chụp đang tắt");
+  $("coachBtn").setAttribute("aria-pressed", String(st.coachOn));
+  $("modeCam").setAttribute("aria-pressed", String(st.mode === "camera"));
+  $("modeSubj").setAttribute("aria-pressed", String(st.mode === "subject"));
+}
+const LEVEL_NOTES = {
+  minimal:"Chỉ hiện chỉ dẫn chính, mũi tên và thước cân bằng.",
+  balanced:"Hiện 1 chỉ dẫn quan trọng nhất kèm giải thích ngắn.",
+  detailed:"Hiện thêm các lỗi phụ để bạn học bố cục nhanh hơn.",
+};
+function syncSettingsUI() {
+  for (const b of $("levelSeg").children) b.setAttribute("aria-pressed", String(b.dataset.v === S.level));
+  for (const b of $("gridSeg").children) b.setAttribute("aria-pressed", String(b.dataset.v === S.grid));
+  $("levelNote").textContent = LEVEL_NOTES[S.level];
+  $("optText").checked = S.text; $("optVoice").checked = S.voice; $("optAuto").checked = S.autoCapture;
+  $("thrVal").textContent = S.threshold; $("optShortcut").value = S.shortcutName;
+}
+function setS(k, v) { S[k] = v; saveS(); syncSettingsUI(); syncTopBar(); lastCardKey = ""; }
+
+$("autoBtn").onclick = () => { setS("autoCapture", !S.autoCapture); if (!S.autoCapture) cancelCountdown(); toast(S.autoCapture ? "Tự chụp: bật. Đạt chuẩn là app tự chụp." : "Tự chụp: tắt"); };
+$("coachBtn").onclick = () => { st.coachOn = !st.coachOn; if (!st.coachOn) cancelCountdown(); syncTopBar(); };
+$("settingsBtn").onclick = () => openSheet("settings");
+$("settingsDone").onclick = () => closeSheet("settings");
+$("levelSeg").onclick = (e) => { const v = e.target.closest("button")?.dataset.v; if (v) setS("level", v); };
+$("gridSeg").onclick = (e) => { const v = e.target.closest("button")?.dataset.v; if (v) setS("grid", v); };
+$("optText").onchange = (e) => setS("text", e.target.checked);
+$("optVoice").onchange = (e) => { setS("voice", e.target.checked); if (e.target.checked) say("Đã bật giọng nói", true); };
+$("optAuto").onchange = (e) => { setS("autoCapture", e.target.checked); if (!S.autoCapture) cancelCountdown(); };
+$("thrDown").onclick = () => setS("threshold", Math.max(75, S.threshold - 1));
+$("thrUp").onclick = () => setS("threshold", Math.min(98, S.threshold + 1));
+$("optShortcut").onchange = (e) => setS("shortcutName", e.target.value.trim() || "Coach Camera");
+$("openSetup").onclick = () => { closeSheet("settings"); openSheet("setup"); };
+$("setupClose").onclick = () => closeSheet("setup");
+$("setupTest").onclick = () => runShortcut();
+$("setupDone").onclick = () => { setS("shortcutReady", true); closeSheet("setup"); toast("Xong. Bấm Camera gốc để chụp."); };
+$("modeCam").onclick = () => { st.mode = "camera"; syncTopBar(); };
+$("modeSubj").onclick = () => { st.mode = "subject"; if (st.sceneSel == null) { st.sceneSel = "person"; renderChips(); } syncTopBar(); };
+$("speakBtn").onclick = () => { const g = st.guidance; if (g) say(g.speech || g.title, true); };
+$("shutter").onclick = () => capture();
+$("choiceNow").onclick = () => capture();
+$("nativeBtn").onclick = openNative;
+$("choiceCam").onclick = openNative;
+$("reviewDone").onclick = closeReview;
+$("bannerClose").onclick = () => { $("banner").hidden = true; };
+const onPick = (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) openReview(f, "library", null); };
+$("libInput").onchange = onPick;
+$("bannerInput").onchange = onPick;
+vf.addEventListener("click", (e) => {
+  if (e.target.closest("button")) return;
+  if (st.countdown != null) { cancelCountdown(true); toast("Đã hủy tự chụp"); }
+});
+
+$("startBtn").onclick = async () => {
+  $("startErr").hidden = true;
+  enableMotion();                                  // phải gọi trong lúc người dùng bấm
+  if ("speechSynthesis" in window) speechSynthesis.getVoices();
+  try {
+    await startCamera();
+    $("start").hidden = true;
+    st.running = true; st.sessionStart = performance.now(); st.guidance = scanningGuidance();
+    renderChips(); syncTopBar();
+    loadAI();
+    loop();
+  } catch (e) {
+    const denied = e && (e.name === "NotAllowedError" || e.name === "SecurityError");
+    $("startErr").textContent = denied
+      ? "Chưa có quyền camera. Vào Cài đặt → Safari → Camera → Cho phép, rồi bấm lại."
+      : (e.message || "Không mở được camera.");
+    $("startErr").hidden = false;
+  }
+};
+
+document.addEventListener("visibilitychange", async () => {
+  if (document.hidden) { cancelCountdown(); return; }
+  if (st.handoff) { st.handoff = false; $("banner").hidden = false; }
+  if (st.running && !cameraAlive()) {
+    try { await startCamera(); } catch { st.running = false; $("start").hidden = false; }
+  }
+  st.sessionStart = performance.now(); st.smoothed = 0;
+});
+
+syncTopBar();
+renderControls();
+
+// Móc kiểm thử: chỉ bật khi mở trang với ?test
+if (new URLSearchParams(location.search).has("test")) {
+  window.__coach = { st, S, evaluate, handle, render, renderChips, buildObservation, makeMapper, personFromLandmarks, onOrientation, capture, openReview };
+}
+</script>
+</body>
+</html>
