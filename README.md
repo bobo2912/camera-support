@@ -32,7 +32,8 @@ Bấm **Camera gốc** lần đầu, app hiện hướng dẫn:
 
 1. App **Phím tắt** → **+** → Thêm tác vụ → gõ "Camera" → chọn tác vụ mở Camera. Đặt tên Shortcut là **Coach Camera**.
 2. **Cài đặt → Camera** → bật **Lưới** và **Cân bằng**, để khi sang Camera gốc vẫn có mốc giữ đúng góc.
-3. Chụp xong, vuốt thanh ngang dưới đáy màn hình sang phải để quay lại Camera Coach. App sẽ hỏi có muốn chấm điểm ảnh vừa chụp không.
+3. **Cho khung ảnh khớp nhau**: nút nhỏ ở góc dưới bên trái khung ngắm (4:3 / 16:9 / 1:1) phải trùng với tỉ lệ đang chọn trong app Camera. Nếu Camera để 16:9 mà app để 4:3, phần hai bên sẽ bị cắt mất. Giữ zoom 1× ở cả hai app.
+4. Chụp xong, vuốt thanh ngang dưới đáy màn hình sang phải để quay lại Camera Coach. App sẽ hỏi có muốn chấm điểm ảnh vừa chụp không.
 
 ## Sửa app sau này
 
