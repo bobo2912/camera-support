@@ -92,10 +92,10 @@ Sửa `recipes.json` trên GitHub, chờ 1–2 phút, tắt hẳn app rồi mở
 
 ## Pin và nhiệt độ
 
-- Hình xem trước ở khoảng 1280×960 (ảnh đẹp đã có Camera gốc lo), AI chạy khoảng 4–6 lần mỗi giây và tự chạy thưa lại khi đã canh chuẩn hoặc khi máy xử lý chậm.
+- Hình xem trước khoảng 1280×960 ở 24 hình/giây (ảnh đẹp đã có Camera gốc lo). AI chạy khoảng 4 lần mỗi giây, thưa hơn khi máy đứng yên, khi đã canh chuẩn hoặc khi máy xử lý chậm.
 - Đang chụp người thì nhận diện đồ vật và phân loại cảnh chỉ chạy vài giây một lần.
 - **Tự tạm dừng** (mặc định bật): máy nằm yên 30 giây hoặc 3 phút không chạm thì app nghỉ camera và AI. Chạm để tiếp tục, không phải cấp quyền lại.
-- **Tiết kiệm pin** (Cài đặt): hình xem trước nhỏ hơn, AI chạy thưa gấp đôi.
+- **Tiết kiệm pin** (Cài đặt): hình xem trước 960×720 ở 15 hình/giây, AI chạy khoảng 2 lần mỗi giây.
 - Góc dưới bên phải màn hình có số đo tải AI, ví dụ `AI 18 ms · 5.2/s`: số mili giây AI mất cho mỗi lần phân tích và số lần mỗi giây. Chữ chuyển cam khi trên 40 ms, đỏ khi trên 80 ms (máy đang quá tải, nên bật Tiết kiệm pin). Tắt được trong Cài đặt.
 
 ## Cập nhật phiên bản mới
