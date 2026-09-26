@@ -1,11 +1,12 @@
 {
-  "_huong_dan": "Mỗi kiểu chụp là một mục trong recipes. Thêm kiểu mới hoặc sửa kiểu cũ (trùng id) rồi tải file này lên GitHub. Xem README phần Kiểu chụp.",
+  "_huong_dan": "Mỗi kiểu chụp là một mục trong recipes. Trường when là điều kiện để AI tự chọn kiểu (shots, minPeople, maxPeople, down, minFace). Thêm kiểu mới hoặc sửa kiểu cũ (trùng id) rồi tải file này lên GitHub.",
   "recipes": [
     {
       "id": "nguoi-1-3",
       "scene": "person",
       "name": "Chân dung 1/3",
       "source": "Cẩm nang 6.1, 9.1",
+      "whenText": "Kiểu chung khi không kiểu nào khác khớp hơn",
       "howto": "AI tự nhận cỡ cảnh. Cận đến trung cảnh: mắt ở 1/3 trên. 3/4 người, toàn thân: chừa 5–10% trên đầu. Người đứng ở đường 1/3, chừa khoảng thở phía hướng nhìn. Nhóm hoặc cận mặt thì đặt giữa.",
       "subject": {
         "x": "thirds",
@@ -18,7 +19,14 @@
       "scene": "person",
       "name": "Cận mặt",
       "source": "Cẩm nang 5, 6.3, 9.1",
-      "auto": false,
+      "when": {
+        "shots": [
+          "CU",
+          "ECU"
+        ],
+        "maxPeople": 1
+      },
+      "whenText": "Tự chọn khi mặt chiếm nhiều khung (cận mặt)",
       "howto": "Máy ngang mắt hoặc cao hơn mắt 5–15 cm. Có thể cắt nhẹ trán nhưng không cắt cằm, mắt vẫn ở 1/3 trên. Điện thoại nên dùng 2×–3× để mặt không bị méo.",
       "shot": "CU",
       "subject": {
@@ -39,7 +47,14 @@
       "scene": "person",
       "name": "Toàn thân, chân dài",
       "source": "Cẩm nang 4.1, 9.2",
-      "auto": false,
+      "when": {
+        "shots": [
+          "FS",
+          "COWBOY"
+        ],
+        "maxPeople": 1
+      },
+      "whenText": "Tự chọn khi thấy toàn thân hoặc 3/4 người",
       "howto": "Lùi xa 5–8 m. Máy ngang eo hoặc thấp hơn, hơi ngửa lên. Chừa 5–10% trên đầu và một khoảng nhỏ dưới chân. Người dồn trọng lượng một chân, vai chếch 30–45° so với máy.",
       "shot": "FS",
       "subject": {
@@ -68,7 +83,10 @@
       "scene": "person",
       "name": "Chụp nhóm",
       "source": "Cẩm nang 9.3",
-      "auto": false,
+      "when": {
+        "minPeople": 2
+      },
+      "whenText": "Tự chọn khi có từ 2 người trở lên",
       "howto": "Người cao đứng giữa hoặc phía sau, đầu so le tạo các tam giác, đứng khít nhau. Máy hơi cao hơn tầm mắt, đứng chính diện. Không để ai ở mép khung khi dùng góc rộng.",
       "subject": {
         "x": "center",
@@ -89,6 +107,7 @@
       "scene": "landscape",
       "name": "Phong cảnh 1/3",
       "source": "Cẩm nang 6.4, 9.5",
+      "whenText": "Kiểu chung cho phong cảnh",
       "howto": "Giữ chân trời thẳng, ở 1/3 dưới nếu trời đẹp, 1/3 trên nếu tiền cảnh đẹp. Tìm tiền cảnh – trung cảnh – hậu cảnh; có người nhỏ làm thước đo quy mô.",
       "subject": {
         "x": "thirds",
@@ -104,7 +123,13 @@
       "scene": "landscape",
       "name": "Kiến trúc thẳng đứng",
       "source": "Cẩm nang 4.1, 9.5",
-      "auto": false,
+      "when": {
+        "down": [
+          94,
+          180
+        ]
+      },
+      "whenText": "Tự chọn khi bạn ngửa máy chụp công trình, cây cao",
       "howto": "Giữ thân máy thẳng đứng, không ngửa, để các đường dọc không đổ vào nhau. Đứng đúng trục để đối xứng; hoặc chọn góc chéo 45° để thấy hai mặt công trình.",
       "subject": {
         "x": "center",
@@ -127,6 +152,13 @@
       "scene": "food",
       "name": "Món ăn từ trên xuống (flat lay)",
       "source": "Cẩm nang 9.4",
+      "when": {
+        "down": [
+          0,
+          25
+        ]
+      },
+      "whenText": "Tự chọn khi máy gần song song mặt bàn",
       "howto": "Máy song song mặt bàn tuyệt đối. Hợp với món phẳng: pizza, bàn tiệc, bộ sản phẩm sắp xếp theo tam giác hoặc lưới.",
       "subject": {
         "x": "center",
@@ -151,6 +183,13 @@
       "scene": "food",
       "name": "Món ăn góc 30–45°",
       "source": "Cẩm nang 9.4",
+      "when": {
+        "down": [
+          25,
+          74
+        ]
+      },
+      "whenText": "Tự chọn khi máy nghiêng chéo xuống bàn",
       "howto": "Góc nhìn tự nhiên khi ngồi ăn, hợp với hầu hết món. Món nổi bật nhất đặt ở điểm mạnh; đạo cụ tạo đường dẫn về món chính. Ánh sáng từ cửa sổ bên hông hoặc phía sau-bên.",
       "subject": {
         "x": "thirds",
@@ -174,7 +213,13 @@
       "scene": "food",
       "name": "Món có chiều cao, chụp ngang",
       "source": "Cẩm nang 9.4",
-      "auto": false,
+      "when": {
+        "down": [
+          74,
+          180
+        ]
+      },
+      "whenText": "Tự chọn khi máy gần ngang mặt bàn",
       "howto": "Máy gần ngang mặt bàn (0–10°). Dành cho burger, bánh nhiều tầng, ly đồ uống.",
       "subject": {
         "x": "thirds",
@@ -199,6 +244,7 @@
       "scene": "product",
       "name": "Sản phẩm",
       "source": "Cẩm nang 9.4",
+      "whenText": "Kiểu chung cho sản phẩm",
       "howto": "Góc 3/4 để thấy hai mặt, logo hoặc nhãn quay về máy, nền trơn tương phản. Đặt giữa khung, chừa khoảng trống đều.",
       "subject": {
         "x": "center",

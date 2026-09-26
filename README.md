@@ -106,6 +106,8 @@ Thước cân bằng dùng cảm biến nghiêng. Nếu iOS cần hỏi lại qu
 |---|---|
 | `scene` | `person` (người), `landscape` (phong cảnh), `food` (đồ ăn), `product` (sản phẩm) |
 | `auto` | `false` = chỉ dùng khi bạn chọn tay. Bỏ trống = AI được tự chọn |
+| `when` | Điều kiện để AI tự chọn kiểu này: `shots` (cỡ cảnh: ECU, CU, MCU, MS, COWBOY, FS, WS), `minPeople`, `maxPeople`, `down` (khoảng góc máy), `minFace`. Kiểu không có `when` là kiểu chung, dùng khi không kiểu nào khớp |
+| `whenText` | Câu giải thích khi nào kiểu này được tự chọn |
 | `subject.x` | Chủ thể nằm ở đâu theo chiều ngang: `"thirds"` (AI tự chọn đường 1/3 trái hay phải theo hướng nhìn của người và độ rối của nền), `"nearest-third"` (đường 1/3 gần nhất), `"left-third"`, `"right-third"`, `"center"` hoặc số 0–1 |
 | `subject.y` | Theo chiều dọc: `"top-third"`, `"bottom-third"`, `"thirds"`, `"center"` hoặc số 0–1 (0 = mép trên) |
 | `subject.anchor` | Điểm nào của chủ thể đặt vào vị trí trên: `face` (mặt), `feet` (bàn chân), `center` (giữa) |

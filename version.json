@@ -1,4 +1,4 @@
 {
-  "version": "1.8",
-  "notes": "AI chấm và chỉ dẫn theo 15 quy tắc của Cẩm nang góc chụp & bố cục; bỏ giọng nói; nút Camera gốc sang bên phải"
+  "version": "1.8.1",
+  "notes": "Tự chọn kiểu giờ dùng tất cả 10 kiểu, AI nhận diện cỡ cảnh, số người và góc máy để chọn"
 }

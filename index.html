@@ -427,7 +427,7 @@ const MODELS = {
   classify: "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
 };
 
-const APP_VERSION = "1.8";
+const APP_VERSION = "1.8.1";
 const $ = (id) => document.getElementById(id);
 const video = $("video"), canvas = $("ov"), vf = $("vf");
 const ctx = canvas.getContext("2d");
@@ -921,41 +921,48 @@ function smoothContext(raw) {
    File recipes.json cùng thư mục sẽ được nạp và ghi đè/bổ sung các kiểu dưới đây.
    ========================================================= */
 const BUILTIN_RECIPES = [
-  { id:"nguoi-1-3", scene:"person", name:"Chân dung 1/3", source:"Cẩm nang 6.1, 9.1",
+  { id:"nguoi-1-3", scene:"person", name:"Chân dung 1/3", source:"Cẩm nang 6.1, 9.1", whenText:"Kiểu chung khi không kiểu nào khác khớp hơn",
     howto:"AI tự nhận cỡ cảnh. Cận đến trung cảnh: mắt ở 1/3 trên. 3/4 người, toàn thân: chừa 5–10% trên đầu. Người đứng ở đường 1/3, chừa khoảng thở phía hướng nhìn. Nhóm hoặc cận mặt thì đặt giữa.",
     subject:{ x:"thirds", anchor:"auto" }, groupCenter:true },
-  { id:"nguoi-can-mat", scene:"person", name:"Cận mặt", source:"Cẩm nang 5, 6.3, 9.1", auto:false,
+  { id:"nguoi-can-mat", scene:"person", name:"Cận mặt", source:"Cẩm nang 5, 6.3, 9.1",
+    when:{ shots:["CU", "ECU"], maxPeople:1 }, whenText:"Tự chọn khi mặt chiếm nhiều khung (cận mặt)",
     howto:"Máy ngang mắt hoặc cao hơn mắt 5–15 cm. Có thể cắt nhẹ trán nhưng không cắt cằm, mắt vẫn ở 1/3 trên. Điện thoại nên dùng 2×–3× để mặt không bị méo.",
     shot:"CU", subject:{ x:"center", anchor:"auto" }, allowECU:true, camera:{ down:[80, 98], lower:"Hạ máy ngang tầm mắt" } },
-  { id:"nguoi-toan-than-chan-dai", scene:"person", name:"Toàn thân, chân dài", source:"Cẩm nang 4.1, 9.2", auto:false,
+  { id:"nguoi-toan-than-chan-dai", scene:"person", name:"Toàn thân, chân dài", source:"Cẩm nang 4.1, 9.2",
+    when:{ shots:["FS", "COWBOY"], maxPeople:1 }, whenText:"Tự chọn khi thấy toàn thân hoặc 3/4 người",
     howto:"Lùi xa 5–8 m. Máy ngang eo hoặc thấp hơn, hơi ngửa lên. Chừa 5–10% trên đầu và một khoảng nhỏ dưới chân. Người dồn trọng lượng một chân, vai chếch 30–45° so với máy.",
     shot:"FS", subject:{ x:"thirds", y:0.92, anchor:"feet" }, size:{ metric:"body", min:0.65, max:0.93 },
     camera:{ down:[92, 110], raise:"Hạ máy xuống ngang eo rồi ngửa lên", lower:"Ngửa máy ít thôi" },
     hint:"Giữ máy thấp, chừa chút khoảng dưới chân", pose:"Bạn dồn trọng lượng một chân, vai chếch nhẹ về phía máy" },
-  { id:"nguoi-nhom", scene:"person", name:"Chụp nhóm", source:"Cẩm nang 9.3", auto:false,
+  { id:"nguoi-nhom", scene:"person", name:"Chụp nhóm", source:"Cẩm nang 9.3",
+    when:{ minPeople:2 }, whenText:"Tự chọn khi có từ 2 người trở lên",
     howto:"Người cao đứng giữa hoặc phía sau, đầu so le tạo các tam giác, đứng khít nhau. Máy hơi cao hơn tầm mắt, đứng chính diện. Không để ai ở mép khung khi dùng góc rộng.",
     subject:{ x:"center", anchor:"auto" }, groupCenter:"always", camera:{ down:[72, 90], lower:"Nâng máy cao hơn tầm mắt một chút" },
     pose:"Mọi người đứng khít lại, người cao ra giữa" },
-  { id:"phong-canh-1-3", scene:"landscape", name:"Phong cảnh 1/3", source:"Cẩm nang 6.4, 9.5",
+  { id:"phong-canh-1-3", scene:"landscape", name:"Phong cảnh 1/3", source:"Cẩm nang 6.4, 9.5", whenText:"Kiểu chung cho phong cảnh",
     howto:"Giữ chân trời thẳng, ở 1/3 dưới nếu trời đẹp, 1/3 trên nếu tiền cảnh đẹp. Tìm tiền cảnh – trung cảnh – hậu cảnh; có người nhỏ làm thước đo quy mô.",
     subject:{ x:"thirds", y:"thirds", anchor:"center" }, weight:0.5, requireSubject:false, maxSubjectArea:0.35 },
-  { id:"kien-truc", scene:"landscape", name:"Kiến trúc thẳng đứng", source:"Cẩm nang 4.1, 9.5", auto:false,
+  { id:"kien-truc", scene:"landscape", name:"Kiến trúc thẳng đứng", source:"Cẩm nang 4.1, 9.5",
+    when:{ down:[94, 180] }, whenText:"Tự chọn khi bạn ngửa máy chụp công trình, cây cao",
     howto:"Giữ thân máy thẳng đứng, không ngửa, để các đường dọc không đổ vào nhau. Đứng đúng trục để đối xứng; hoặc chọn góc chéo 45° để thấy hai mặt công trình.",
     subject:{ x:"center", y:"center", anchor:"center" }, requireSubject:false, weight:0.4,
     camera:{ down:[87, 93], raise:"Đừng chúc máy: giữ máy thẳng đứng", lower:"Đừng ngửa máy: lùi xa ra thay vì ngửa" } },
   { id:"do-an-tu-tren", scene:"food", name:"Món ăn từ trên xuống (flat lay)", source:"Cẩm nang 9.4",
+    when:{ down:[0, 25] }, whenText:"Tự chọn khi máy gần song song mặt bàn",
     howto:"Máy song song mặt bàn tuyệt đối. Hợp với món phẳng: pizza, bàn tiệc, bộ sản phẩm sắp xếp theo tam giác hoặc lưới.",
     subject:{ x:"center", y:"center", anchor:"center" }, size:{ metric:"area", min:0.12, max:0.9 },
     camera:{ down:[0, 8], lower:"Đưa máy thẳng trên món ăn" } },
   { id:"do-an-cheo-45", scene:"food", name:"Món ăn góc 30–45°", source:"Cẩm nang 9.4",
+    when:{ down:[25, 74] }, whenText:"Tự chọn khi máy nghiêng chéo xuống bàn",
     howto:"Góc nhìn tự nhiên khi ngồi ăn, hợp với hầu hết món. Món nổi bật nhất đặt ở điểm mạnh; đạo cụ tạo đường dẫn về món chính. Ánh sáng từ cửa sổ bên hông hoặc phía sau-bên.",
     subject:{ x:"thirds", y:"thirds", anchor:"center" }, size:{ metric:"area", min:0.1, max:0.85 },
     camera:{ down:[45, 62] } },
-  { id:"do-an-ngang", scene:"food", name:"Món có chiều cao, chụp ngang", source:"Cẩm nang 9.4", auto:false,
+  { id:"do-an-ngang", scene:"food", name:"Món có chiều cao, chụp ngang", source:"Cẩm nang 9.4",
+    when:{ down:[74, 180] }, whenText:"Tự chọn khi máy gần ngang mặt bàn",
     howto:"Máy gần ngang mặt bàn (0–10°). Dành cho burger, bánh nhiều tầng, ly đồ uống.",
     subject:{ x:"thirds", y:"center", anchor:"center" }, size:{ metric:"area", min:0.1, max:0.85 },
     camera:{ down:[80, 98], raise:"Hạ máy xuống gần ngang mặt bàn" } },
-  { id:"san-pham-giua", scene:"product", name:"Sản phẩm", source:"Cẩm nang 9.4",
+  { id:"san-pham-giua", scene:"product", name:"Sản phẩm", source:"Cẩm nang 9.4", whenText:"Kiểu chung cho sản phẩm",
     howto:"Góc 3/4 để thấy hai mặt, logo hoặc nhãn quay về máy, nền trơn tương phản. Đặt giữa khung, chừa khoảng trống đều.",
     subject:{ x:"center", y:"center", anchor:"center" }, size:{ metric:"area", min:0.1, max:0.75 } },
 ];
@@ -980,17 +987,46 @@ const recipesFor = (scene) => RECIPES.filter(r => r.scene === scene);
 const recipeById = (id) => RECIPES.find(r => r.id === id);
 
 /* Chọn kiểu: người dùng chọn thì dùng luôn; để tự chọn thì lấy kiểu gần đạt nhất, có độ trễ để khỏi nhảy qua lại. */
+/* AI nhận diện bố cục rồi chọn kiểu: kiểu có điều kiện "khi nào dùng" (when) khớp với khung hình được ưu tiên,
+   không có kiểu nào khớp thì dùng kiểu chung; nhiều kiểu cùng khớp thì lấy kiểu đang gần đạt nhất. */
+function sceneFacts(obs, motion) {
+  const p = mainPerson(obs);
+  const people = (obs.people || []).filter(q => (q.face && p && p.face && q.face.w > p.face.w * 0.5) || (!p?.face && q.body.h > 0.3));
+  return { shot: p ? shotSize(p) : null, people: p ? Math.max(1, people.length) : 0,
+           down: motion && motion.ok ? motion.down : null, face: p && p.face ? p.face.w : 0 };
+}
+function recipeFits(r, F) {
+  const w = r.when;
+  if (!w) return null;                                       // kiểu chung: không có điều kiện riêng
+  if (w.shots && !(F.shot && w.shots.includes(F.shot))) return false;
+  if (w.minPeople != null && F.people < w.minPeople) return false;
+  if (w.maxPeople != null && F.people > w.maxPeople) return false;
+  if (w.down) { if (F.down == null) return false; if (F.down < w.down[0] || F.down > w.down[1]) return false; }
+  if (w.minFace != null && F.face < w.minFace) return false;
+  return true;
+}
+function candidateRecipes(obs, motion, scene) {
+  const list = recipesFor(scene).filter(r => r.auto !== false);
+  const F = sceneFacts(obs, motion);
+  const specific = list.filter(r => recipeFits(r, F) === true);
+  if (specific.length) return { list:specific, facts:F };
+  const generic = list.filter(r => !r.when);
+  return { list: generic.length ? generic : list, facts:F };
+}
 function pickRecipe(obs, motion, scene, mode) {
   const sel = S.recipeSel && S.recipeSel[scene];
   if (sel && recipeById(sel)) return { recipe:recipeById(sel), auto:false };
-  const list = recipesFor(scene).filter(r => r.auto !== false);
+  const { list } = candidateRecipes(obs, motion, scene);
   if (!list.length) return { recipe:null, auto:true };
-  if (list.length === 1) return { recipe:list[0], auto:true };
-  const scored = list.map(r => ({ r, s:evaluate(obs, motion, scene, mode, r, st.ctx).score }));
-  scored.sort((a, b) => b.s - a.s);
+  const scored = list.length === 1 ? [{ r:list[0], s:0 }] : list.map(r => ({ r, s:evaluate(obs, motion, scene, mode, r, st.ctx).score })).sort((a, b) => b.s - a.s);
   const curId = st.autoRecipe[scene];
   const cur = scored.find(x => x.r.id === curId);
-  if (!cur) { st.autoRecipe[scene] = scored[0].r.id; return { recipe:scored[0].r, auto:true }; }
+  // kiểu đang dùng không còn phù hợp: đổi sau ~0,8 giây ổn định
+  if (!cur) {
+    st.switchVotes[scene] = (st.switchVotes[scene] || 0) + 1;
+    if (!curId || !recipeById(curId) || st.switchVotes[scene] >= 5) { st.autoRecipe[scene] = scored[0].r.id; st.switchVotes[scene] = 0; return { recipe:scored[0].r, auto:true }; }
+    return { recipe:recipeById(curId), auto:true };
+  }
   if (scored[0].r.id !== curId && scored[0].s >= cur.s + 10) {
     st.switchVotes[scene] = (st.switchVotes[scene] || 0) + 1;
     if (st.switchVotes[scene] >= 5) { st.autoRecipe[scene] = scored[0].r.id; st.switchVotes[scene] = 0; return { recipe:scored[0].r, auto:true }; }
@@ -1000,7 +1036,7 @@ function pickRecipe(obs, motion, scene, mode) {
 function bestRecipe(obs, motion, scene, mode, ctx) {
   const sel = S.recipeSel && S.recipeSel[scene];
   if (sel && recipeById(sel)) return recipeById(sel);
-  const list = recipesFor(scene).filter(r => r.auto !== false);
+  const { list } = candidateRecipes(obs, motion, scene);
   let best = null, bs = -1;
   for (const r of list) { const sc = evaluate(obs, motion, scene, mode, r, ctx).score; if (sc > bs) { bs = sc; best = r; } }
   return best;
@@ -1061,7 +1097,7 @@ function shotSize(p) {
   if ((J.ankles || []).some(inF)) return p.body.h < 0.33 ? "WS" : "FS";
   if ((J.knees || []).some(inF)) return "COWBOY";
   if (inF(J.hips)) return "MS";
-  if (inF(J.shoulders)) return p.face && p.face.w > 0.28 ? "CU" : "MCU";
+  if (inF(J.shoulders)) return p.face && p.face.w > 0.22 ? "CU" : "MCU";
   return "CU";
 }
 
@@ -1290,7 +1326,8 @@ function evaluate(obs, motion, scene, mode, recipe, ctx) {
       const off = Math.abs(hy - goal);
       if (off > 0.06) {
         const moveDown = goal > hy;
-        add("HZ", "subj", "tb", Math.min(25, (off - 0.06) * 150 + (Math.abs(hy - 0.5) < 0.08 ? 8 : 0)),
+        // chân trời nằm giữa khung chỉ hợp cảnh đối xứng (6.4): trừ đủ để chưa báo "Đẹp rồi"
+        add("HZ", "subj", "tb", Math.max(Math.abs(hy - 0.5) < 0.1 ? 25 : 0, Math.min(25, (off - 0.06) * 150)),
           moveDown ? "Ngẩng máy lên để chân trời xuống 1/3 dưới" : "Chúc máy xuống để chân trời lên 1/3 trên",
           skyNice ? "Trời nhiều mây, hoàng hôn: cho trời chiếm 2/3" : "Tiền cảnh đẹp hơn trời: cho cảnh chiếm 2/3", moveDown ? "tiltUp" : "tiltDown");
       }
@@ -1446,9 +1483,10 @@ function handle(obs) {
     g = guidanceToView(g, f);
   }
 
+  const rawScore = g.score;
   st.smoothed = st.smoothed === 0 ? g.score : st.smoothed * 0.7 + g.score * 0.3;
   g.score = Math.round(st.smoothed);
-  const aligned = !g.blocking && !g.hasHigh && g.score >= S.threshold;
+  const aligned = !g.blocking && !g.hasHigh && g.score >= S.threshold && rawScore >= S.threshold;
   g.aligned = aligned;
   const prev = st.guidance || {};
   if (aligned) {
@@ -1770,8 +1808,10 @@ function fillRecipes() {
     };
     box.appendChild(b);
   };
-  item(null, "Tự chọn kiểu hợp nhất", "AI dẫn theo kiểu cơ bản đang gần đạt nhất. Kiểu ghi “chọn tay” chỉ dùng khi bạn chọn.", "");
-  for (const r of recipesFor(scene)) item(r.id, r.name, r.howto, (r.source || "") + (r.auto === false ? " · chọn tay" : ""));
+  const cur = st.autoRecipe[scene] && recipeById(st.autoRecipe[scene]);
+  item(null, "Tự chọn kiểu hợp nhất", "AI nhận diện bố cục (cỡ cảnh, số người, góc máy) rồi chọn trong tất cả kiểu bên dưới." +
+    (cur ? ` Đang chọn: ${cur.name}.` : ""), "");
+  for (const r of recipesFor(scene)) item(r.id, r.name, r.howto, (r.source || "") + (r.auto === false ? " · chỉ khi chọn tay" : r.whenText ? " · " + r.whenText : ""));
 }
 function openRecipes() {
   fillRecipes();
