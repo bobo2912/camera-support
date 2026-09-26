@@ -1,4 +1,4 @@
 {
-  "version": "1.7.1",
-  "notes": "Sửa thanh trên cùng bị che bởi thanh trạng thái khi mở từ màn hình chính"
+  "version": "1.8",
+  "notes": "AI chấm và chỉ dẫn theo 15 quy tắc của Cẩm nang góc chụp & bố cục; bỏ giọng nói; nút Camera gốc sang bên phải"
 }

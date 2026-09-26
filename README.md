@@ -35,6 +35,34 @@ Bấm **Camera gốc** lần đầu, app hiện hướng dẫn:
 3. **Cho khung ảnh khớp nhau**: nút nhỏ ở góc dưới bên trái khung ngắm (4:3 / 16:9 / 1:1) phải trùng với tỉ lệ đang chọn trong app Camera. Nếu Camera để 16:9 mà app để 4:3, phần hai bên sẽ bị cắt mất. Giữ zoom 1× ở cả hai app.
 4. Chụp xong, vuốt thanh ngang dưới đáy màn hình sang phải để quay lại Camera Coach. Muốn chấm điểm ảnh vừa chụp, bấm nút ảnh nhỏ bên trái nút chụp.
 
+## Bộ quy tắc chấm điểm (theo Cẩm nang góc chụp & bố cục)
+
+Từ bản 1.8, AI chấm và chỉ dẫn theo chương 11 của cẩm nang:
+
+| Mã | Quy tắc | Ưu tiên |
+|---|---|---|
+| R1 | Chân trời/máy thẳng (lệch 1–10°) | Cao |
+| R2 | Không cắt tại khớp (cổ, khuỷu, cổ tay, eo, gối, cổ chân) | Cao |
+| R3 | Toàn thân đủ bàn chân | Cao |
+| R4 | Vật thẳng đứng "mọc" sau đầu | Cao |
+| R5 | Đường ngang cắt qua mắt, cổ | Cao |
+| R6 | Mắt ở 1/3 trên (cận mặt → trung cảnh) | Trung bình |
+| R7 | Khoảng trống trên đầu 5–10% (3/4 người, toàn thân) | Trung bình |
+| R8 | Khoảng thở phía hướng nhìn | Trung bình |
+| R9 | Vị trí 1/3 | Thấp |
+| R10 | Chủ thể đủ lớn | Trung bình |
+| R11 | Méo góc rộng khi mặt sát mép | Trung bình |
+| R12 | Toàn thân chụp từ trên cao | Trung bình |
+| R13 | Vật lạ ở mép, góc | Thấp |
+| R14 | Mảng sáng chói ở mép | Trung bình |
+| R15 | Mặt tối hơn nền | Cao |
+
+Điểm 100 chia 5 nhóm: kỹ thuật 25, chủ thể & vị trí 25, hậu cảnh & viền 20, góc máy & ánh sáng 20, chiều sâu 10. Từ 80 điểm và không còn lỗi ưu tiên Cao thì app báo "Đẹp rồi! Giữ yên và chụp". Dưới 60 điểm app đưa tối đa 2 chỉ dẫn.
+
+Chưa làm được: R16 (nhóm cùng độ cao đầu, vì app chỉ theo dõi tối đa 2 người để đỡ nóng máy), độ nét và rung. Phần "chiều sâu" mới chỉ ước lượng qua độ tách sáng giữa mặt và nền.
+
+Màn chấm điểm có nút **Lưu nhãn dữ liệu (JSON)** theo đúng mẫu chương 12.2, để gom bộ dữ liệu huấn luyện sau này.
+
 ## AI đọc khung cảnh thế nào
 
 Ngoài việc tìm người và đồ vật, app đọc thêm khung cảnh (không cần mô hình AI, chạy trên ảnh thu nhỏ):
