@@ -35,6 +35,15 @@ Bấm **Camera gốc** lần đầu, app hiện hướng dẫn:
 3. **Cho khung ảnh khớp nhau**: nút nhỏ ở góc dưới bên trái khung ngắm (4:3 / 16:9 / 1:1) phải trùng với tỉ lệ đang chọn trong app Camera. Nếu Camera để 16:9 mà app để 4:3, phần hai bên sẽ bị cắt mất. Giữ zoom 1× ở cả hai app.
 4. Chụp xong, vuốt thanh ngang dưới đáy màn hình sang phải để quay lại Camera Coach. Muốn chấm điểm ảnh vừa chụp, bấm nút ảnh nhỏ bên trái nút chụp.
 
+## AI đọc khung cảnh thế nào
+
+Ngoài việc tìm người và đồ vật, app đọc thêm khung cảnh (không cần mô hình AI, chạy trên ảnh thu nhỏ):
+
+- **Hướng nhìn của người**: người nghiêng mặt sang trái thì đặt ở đường 1/3 bên phải, chừa khoảng trống trước mặt, và ngược lại.
+- **Nền rối bên nào**: nếu một bên người nhiều đồ đạc, chi tiết hơn hẳn bên kia, app đẩy người về phía đó để khung chứa nhiều phần nền gọn hơn.
+- **Đường chân trời / đường ngang chính** (mép biển, mép tường với sàn…): không để nằm giữa khung, không để cắt ngang đầu, cổ người. Trời nhiều mây, hoàng hôn thì cho trời chiếm 2/3; trời trơn thì cho cảnh bên dưới chiếm 2/3.
+- Đồ vật nhỏ trong một không gian rộng được coi là khung cảnh (đặt ở giao điểm 1/3), không bị kéo vào giữa như chụp sản phẩm.
+
 ## Không phải cấp quyền camera mỗi lần
 
 Từ bản 1.2, nếu bạn đã cho phép camera một lần, app mở thẳng vào camera, không cần bấm "Bật camera".
@@ -69,7 +78,7 @@ Thước cân bằng dùng cảm biến nghiêng. Nếu iOS cần hỏi lại qu
 |---|---|
 | `scene` | `person` (người), `landscape` (phong cảnh), `food` (đồ ăn), `product` (sản phẩm) |
 | `auto` | `false` = chỉ dùng khi bạn chọn tay. Bỏ trống = AI được tự chọn |
-| `subject.x` | Chủ thể nằm ở đâu theo chiều ngang: `"thirds"` (đường 1/3 gần nhất), `"left-third"`, `"right-third"`, `"center"` hoặc số 0–1 |
+| `subject.x` | Chủ thể nằm ở đâu theo chiều ngang: `"thirds"` (AI tự chọn đường 1/3 trái hay phải theo hướng nhìn của người và độ rối của nền), `"nearest-third"` (đường 1/3 gần nhất), `"left-third"`, `"right-third"`, `"center"` hoặc số 0–1 |
 | `subject.y` | Theo chiều dọc: `"top-third"`, `"bottom-third"`, `"thirds"`, `"center"` hoặc số 0–1 (0 = mép trên) |
 | `subject.anchor` | Điểm nào của chủ thể đặt vào vị trí trên: `face` (mặt), `feet` (bàn chân), `center` (giữa) |
 | `size` | Độ lớn chủ thể: `metric` là `face` (bề ngang mặt / bề ngang khung), `body` (chiều cao người / chiều cao khung) hoặc `area` (diện tích); `min`, `max` từ 0 đến 1 |

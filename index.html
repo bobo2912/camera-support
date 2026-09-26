@@ -298,7 +298,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 
   <p class="note" id="camInfo" style="margin-top:22px"></p>
   <p class="note" id="recipeInfo"></p>
-  <p class="note">Phiên bản 1.2</p>
+  <p class="note">Phiên bản 1.3</p>
   <p class="note">Mọi phân tích chạy ngay trên điện thoại. Ảnh không được gửi lên máy chủ, app không dùng API key nào.</p>
 </section>
 
@@ -626,7 +626,18 @@ function personFromLandmarks(lm, map) {
       if (top < body.y) { body.h += body.y - top; body.y = top; }
     }
   }
-  return { face, body };
+  // Hướng nhìn trong khung: -1 = nhìn sang trái khung, 1 = sang phải, 0 = nhìn thẳng
+  let facing = 0;
+  if (nose && face) {
+    let mid = null;
+    if (lear && rear) mid = (lear.x + rear.x) / 2;
+    else if (lear || rear) mid = (lear || rear).x;          // chỉ thấy một tai: đang nghiêng mặt rõ
+    if (mid != null) {
+      const k = (nose.x - mid) / face.w;
+      if (Math.abs(k) > 0.12) facing = k < 0 ? -1 : 1;
+    }
+  }
+  return { face, body, facing };
 }
 
 const FOOD_WORDS = ["banana","apple","sandwich","orange","broccoli","carrot","hot dog","hotdog","pizza","donut","cake","bowl",
@@ -674,6 +685,80 @@ function analyzeFrame(now) {
   const obs = buildObservation(poseRes, objRes, clsRes, map, vw, vh);
   if (objRes) st.objects = obs.objects; else obs.objects = st.objects;   // giữ kết quả vật thể giữa các lần chạy
   return obs;
+}
+
+/* =========================================================
+   3a. Đọc khung cảnh: đường chân trời và độ "rối" của nền
+   Chạy trên ảnh thu nhỏ 48×64, không cần mô hình AI.
+   ========================================================= */
+const cvx = document.createElement("canvas");
+const cvxCtx = cvx.getContext("2d", { willReadFrequently:true });
+function analyzeContext(src, sx, sy, sw, sh) {
+  const W = 48, H = Math.max(24, Math.round(48 * sh / sw));
+  cvx.width = W; cvx.height = H;
+  try { cvxCtx.drawImage(src, sx, sy, sw, sh, 0, 0, W, H); } catch { return null; }
+  const d = cvxCtx.getImageData(0, 0, W, H).data;
+  const lum = new Float32Array(W * H), blue = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+    lum[i] = 0.299 * r + 0.587 * g + 0.114 * b; blue[i] = b - r;
+  }
+  // độ rối theo cột (năng lượng cạnh)
+  const colE = new Float32Array(W);
+  const rowE = new Float32Array(H);
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const i = y * W + x;
+    const e = Math.abs(lum[i + 1] - lum[i - 1]) + Math.abs(lum[i + W] - lum[i - W]);
+    colE[x] += e / H; rowE[y] += e / W;
+  }
+  // đường chân trời: chỗ độ sáng đổi mạnh và đều trên cả bề ngang
+  const band = Math.max(2, Math.round(H / 16)), thirdW = Math.floor(W / 3);
+  let best = null;
+  for (let y = band; y < H - band; y++) {
+    const yn = y / H;
+    if (yn < 0.12 || yn > 0.88) continue;
+    const parts = [0, 1, 2].map(k => {
+      let a = 0, b2 = 0, n = 0;
+      for (let x = k * thirdW; x < (k + 1) * thirdW; x++) {
+        for (let t = 1; t <= band; t++) { a += lum[(y - t) * W + x]; b2 += lum[(y + t - 1) * W + x]; n++; }
+      }
+      return (a - b2) / n;
+    });
+    const same = parts.every(p => Math.sign(p) === Math.sign(parts[0]));
+    const minAbs = Math.min(...parts.map(Math.abs));
+    if (!same || minAbs <= 10) continue;
+    // phía trên giống bầu trời (sáng hơn, ngả xanh hoặc rất sáng) thì ưu tiên
+    let bl = 0, lu = 0, n = 0;
+    for (let yy = 0; yy < y - 1; yy++) for (let x = 0; x < W; x++) { bl += blue[yy * W + x]; lu += lum[yy * W + x]; n++; }
+    const skyLike = parts[0] > 0 && n > 0 && (bl / n > 8 || lu / n > 140);
+    const score = minAbs * (skyLike ? 1.6 : 1);
+    if (!best || score > best.score) best = { y:yn, strength:minAbs, score, sky:skyLike };
+  }
+  let skyTexture = null;
+  if (best) {
+    // so độ chi tiết trên/dưới đường chân trời bằng trung vị, để một đường viền đơn lẻ không làm lệch kết quả
+    const hy = Math.round(best.y * H), med = (a) => { a.sort((p, q) => p - q); return a[Math.floor(a.length / 2)]; };
+    const up = [], dn = [];
+    for (let y = 1; y < H - 1; y++) { if (y < hy - 2) up.push(rowE[y]); else if (y > hy + 2) dn.push(rowE[y]); }
+    skyTexture = up.length > 2 ? med(up) : null;   // độ chi tiết của bầu trời: mây, hoàng hôn cho số lớn
+  }
+  return { horizon: best && best.strength > 14 ? best : null, colE:Array.from(colE), skyTexture };
+}
+
+/* Gộp kết quả vài lần gần nhất để đường chân trời không nhảy */
+const ctxHist = [];
+function smoothContext(raw) {
+  if (!raw) return st.ctx;
+  ctxHist.push(raw); if (ctxHist.length > 5) ctxHist.shift();
+  const hs = ctxHist.filter(c => c.horizon).map(c => c.horizon.y).sort((a, b) => a - b);
+  let horizon = null;
+  if (hs.length >= 3) {
+    const med = hs[Math.floor(hs.length / 2)];
+    const near = hs.filter(y => Math.abs(y - med) < 0.06);
+    if (near.length >= 3) horizon = { y:med, sky: ctxHist.filter(c => c.horizon && Math.abs(c.horizon.y - med) < 0.06 && c.horizon.sky).length >= 2 };
+  }
+  const tex = ctxHist.map(c => c.skyTexture).filter(v => v != null);
+  return { horizon, colE:raw.colE, skyTexture: tex.length ? tex[tex.length - 1] : null };
 }
 
 /* =========================================================
@@ -734,7 +819,7 @@ function pickRecipe(obs, motion, scene, mode) {
   const list = recipesFor(scene).filter(r => r.auto !== false);
   if (!list.length) return { recipe:null, auto:true };
   if (list.length === 1) return { recipe:list[0], auto:true };
-  const scored = list.map(r => ({ r, s:evaluate(obs, motion, scene, mode, r).score }));
+  const scored = list.map(r => ({ r, s:evaluate(obs, motion, scene, mode, r, st.ctx).score }));
   scored.sort((a, b) => b.s - a.s);
   const curId = st.autoRecipe[scene];
   const cur = scored.find(x => x.r.id === curId);
@@ -745,12 +830,12 @@ function pickRecipe(obs, motion, scene, mode) {
   } else st.switchVotes[scene] = 0;
   return { recipe:cur.r, auto:true };
 }
-function bestRecipe(obs, motion, scene, mode) {
+function bestRecipe(obs, motion, scene, mode, ctx) {
   const sel = S.recipeSel && S.recipeSel[scene];
   if (sel && recipeById(sel)) return recipeById(sel);
   const list = recipesFor(scene).filter(r => r.auto !== false);
   let best = null, bs = -1;
-  for (const r of list) { const sc = evaluate(obs, motion, scene, mode, r).score; if (sc > bs) { bs = sc; best = r; } }
+  for (const r of list) { const sc = evaluate(obs, motion, scene, mode, r, ctx).score; if (sc > bs) { bs = sc; best = r; } }
   return best;
 }
 
@@ -763,8 +848,37 @@ const nearest = (vals, x) => vals.reduce((a, b) => Math.abs(b - x) < Math.abs(a 
 const placeName = (tx) => Math.abs(tx - 0.5) < 0.01 ? "giữa khung" : tx < 0.5 ? "đường lưới bên trái" : "đường lưới bên phải";
 const offset = (r, dx, dy) => ({ x:r.x + dx, y:r.y + dy, w:r.w, h:r.h });
 
-function evaluate(obs, motion, scene, mode, recipe) {
+/* Chọn đường 1/3 trái hay phải cho người, dựa vào khung cảnh. Trả về { x, why }. */
+function chooseThird(person, rect, ctx, L, stickySide) {
+  const near = nearest(L, rect.x + rect.w / 2);
+  // 1. người đang nhìn sang một bên: đặt ở phía đối diện, chừa khoảng trống trước mặt
+  if (person && person.facing) {
+    return person.facing < 0
+      ? { x:L[1], why:"người nhìn sang trái, chừa khoảng trống phía trước mặt", side:1 }
+      : { x:L[0], why:"người nhìn sang phải, chừa khoảng trống phía trước mặt", side:-1 };
+  }
+  // 2. nền hai bên người rối khác nhau: đẩy người về phía rối để khung chứa nhiều phần nền gọn hơn
+  if (ctx && ctx.colE && ctx.colE.length) {
+    const n = ctx.colE.length;
+    const avg = (a, b) => { let s2 = 0, c = 0; for (let x = Math.max(0, a); x < Math.min(n, b); x++) { s2 += ctx.colE[x]; c++; } return c >= 4 ? s2 / c : null; };
+    const l = avg(0, Math.floor(rect.x * n)), r = avg(Math.ceil((rect.x + rect.w) * n), n);
+    if (l != null && r != null) {
+      const ratio = (Math.max(l, r) + 1) / (Math.min(l, r) + 1);
+      if (ratio > 1.35) {
+        return r > l
+          ? { x:L[1], why:"nền bên phải rối hơn, để phần nền gọn bên trái lọt vào khung", side:1 }
+          : { x:L[0], why:"nền bên trái rối hơn, để phần nền gọn bên phải lọt vào khung", side:-1 };
+      }
+    }
+  }
+  // 3. không có gợi ý rõ: giữ bên đang chọn, hoặc đường gần nhất
+  if (stickySide) return { x: stickySide < 0 ? L[0] : L[1], why:"", side:stickySide };
+  return { x:near, why:"", side: near < 0.5 ? -1 : 1 };
+}
+
+function evaluate(obs, motion, scene, mode, recipe, ctx) {
   recipe = recipe || recipesFor(scene)[0] || {};
+  ctx = ctx || null;
   const g = { score:0, aligned:false, blocking:false, title:"", subtitle:null, tips:[], speech:null, icon:"check",
               subject:null, anchor:null, target:null, targetRect:null, ground:false, tilt:null, camAngle:null, camOk:null,
               checks:[], recipe };
@@ -800,7 +914,7 @@ function evaluate(obs, motion, scene, mode, recipe) {
   }
 
   // 2. chủ thể
-  let anchor = null, target = null, subj = null, ghost = null, place = "điểm mạnh của khung", size = null, noun;
+  let anchor = null, target = null, subj = null, ghost = null, place = "điểm mạnh của khung", size = null, noun, why = "";
   const weight = recipe.weight ?? 1;
   const sizeOf = (metric, face, body, rect) =>
     metric === "face" ? (face ? face.w : null) : metric === "body" ? (body ? body.h : null) : metric === "area" ? (rect ? area(rect) : null) : null;
@@ -833,13 +947,28 @@ function evaluate(obs, motion, scene, mode, recipe) {
         // chưa thấy mặt: lấy vùng đầu từ khung người
         anchorType = "head"; rect = body; a = { x:body.x + body.w / 2, y:body.y + body.h * 0.12 };
       }
-      if (tx == null) tx = resolveX(R.x, a.x);
+      if (tx == null) {
+        if (R.x === "thirds" || R.x == null) {
+          const ch = ctx && ctx.noHint && ctx.side
+            ? { x: ctx.side < 0 ? L[0] : L[1], why:"", side:ctx.side }
+            : chooseThird(main, rect, ctx, L, ctx && ctx.side);
+          tx = ch.x; why = ch.why; g.side = ch.side;
+        } else tx = resolveX(R.x, a.x);
+      }
       if (ty == null) ty = resolveY(R.y, a.y, anchorType === "head" ? "none" : anchorType);
       anchor = a; target = { x:tx, y:ty }; subj = rect;
       place = anchorType === "feet" ? "sát mép dưới khung" : placeName(tx);
       ghost = offset(body, tx - a.x, ty - a.y);
       size = judgeSize(sizeOf(recipe.size?.metric, f, body, rect));
       if (body.y < 0.015 && anchorType !== "feet") issues.push({ p:20, t:"Ngẩng máy lên một chút", s:"Đầu đang sát mép trên khung", i:"tiltUp" });
+      // đường chân trời chạy ngang đầu, cổ
+      if (ctx && ctx.horizon && f) {
+        const hy = ctx.horizon.y, top = f.y, neck = f.y + f.h * 1.7;
+        if (hy > top && hy < neck) issues.push({ p:12, t: hy < f.y + f.h / 2 ? "Hạ máy thấp xuống một chút" : "Nâng máy cao lên một chút",
+          s: ctx.horizon.sky ? "Đường chân trời đang cắt ngang đầu, cổ người" : "Một đường ngang phía sau đang cắt qua đầu, cổ người", i: hy < f.y + f.h / 2 ? "tiltDown" : "tiltUp" });
+        const cut = hy > top && hy < neck, nm = ctx.horizon.sky ? "Đường chân trời" : "Đường ngang phía sau";
+        checks.push({ ok:!cut, t: cut ? `${nm} cắt ngang đầu, cổ` : `${nm} không cắt qua đầu` });
+      }
     }
   } else {
     noun = scene === "food" ? "món ăn" : scene === "landscape" ? "điểm nhấn" : "sản phẩm";
@@ -852,6 +981,23 @@ function evaluate(obs, motion, scene, mode, recipe) {
       place = Math.abs(target.x - 0.5) < 0.01 && Math.abs(target.y - 0.5) < 0.01 ? "giữa khung" : "giao điểm lưới gần nhất";
       size = judgeSize(sizeOf(recipe.size?.metric, null, null, s2));
     }
+  }
+
+  // đường chân trời không nên nằm giữa khung (phong cảnh)
+  if (scene === "landscape" && ctx && ctx.horizon) {
+    const hy = ctx.horizon.y;
+    g.horizonY = hy;
+    const skyNice = ctx.skyTexture != null && ctx.skyTexture > 6;   // trời có mây, hoàng hôn: nhiều chi tiết
+    const goal = skyNice ? L[1] : L[0];
+    const off = Math.abs(hy - goal);
+    if (off > 0.06) {
+      const moveDown = goal > hy;          // chân trời cần xuống thấp hơn trong khung → ngẩng máy lên
+      issues.push({ p:Math.min(25, (off - 0.06) * 120 + (Math.abs(hy - 0.5) < 0.08 ? 8 : 0)),
+        t: moveDown ? "Ngẩng máy lên để chân trời xuống 1/3 dưới" : "Chúc máy xuống để chân trời lên 1/3 trên",
+        s: skyNice ? "Bầu trời nhiều chi tiết, cho trời chiếm 2/3 khung" : "Trời trơn, cho phần cảnh bên dưới chiếm 2/3 khung",
+        i: moveDown ? "tiltUp" : "tiltDown" });
+    }
+    checks.push({ ok:off <= 0.06, t: off <= 0.06 ? "Đường chân trời nằm ở 1/3" : Math.abs(hy - 0.5) < 0.08 ? "Đường chân trời nằm giữa khung" : "Đường chân trời chưa ở 1/3" });
   }
 
   // 3. góc máy (ngửa / chúc) theo kiểu chụp
@@ -876,17 +1022,17 @@ function evaluate(obs, motion, scene, mode, recipe) {
         const right = dx > 0; // chủ thể cần sang phải trong khung → xoay máy sang trái
         if (subjectMode) {
           issues.push({ p, t:`Mời bạn ấy dịch sang ${right ? "phải" : "trái"}${small ? " một chút" : " 1–2 bước"}`,
-            s:`Về phía tay ${right ? "phải" : "trái"} của bạn, bóng mờ là chỗ đứng`, i: right ? "stepRight" : "stepLeft",
+            s: why ? `Bóng mờ là chỗ đứng: ${why}` : `Về phía tay ${right ? "phải" : "trái"} của bạn, bóng mờ là chỗ đứng`, i: right ? "stepRight" : "stepLeft",
             sp:`Bạn bước sang ${right ? "trái" : "phải"}${small ? " một chút" : " một hai bước"}` });
         } else {
-          issues.push({ p, t:`Xoay máy sang ${right ? "trái" : "phải"}${bit}`, s:`Đưa ${noun} vào ${place}`, i: right ? "panLeft" : "panRight" });
+          issues.push({ p, t:`Xoay máy sang ${right ? "trái" : "phải"}${bit}`, s: why ? `Đưa ${noun} vào ${place}: ${why}` : `Đưa ${noun} vào ${place}`, i: right ? "panLeft" : "panRight" });
         }
       } else {
         const downward = dy > 0; // chủ thể cần xuống thấp hơn → ngẩng máy lên
         issues.push({ p, t: downward ? `Ngẩng máy lên${bit}` : `Chúc máy xuống${bit}`, s:`Đưa ${noun} vào ${place}`, i: downward ? "tiltUp" : "tiltDown" });
       }
     }
-    checks.push({ ok:d < 0.06, t: d < 0.06 ? `${cap(noun)} nằm ở ${place}` : `${cap(noun)} lệch khỏi ${place}` });
+    checks.push({ ok:d < 0.06, t: d < 0.06 ? `${cap(noun)} nằm ở ${place}` : `${cap(noun)} lệch khỏi ${place}` + (why ? ` (${why})` : "") });
   } else if (recipe.requireSubject !== false) {
     const m = scene === "person" ? "Chưa thấy người trong khung" : "Chưa rõ chủ thể chính";
     issues.push({ p: scene === "person" ? 40 : 20, t:m, s: scene === "person" ? "Hướng máy về phía người cần chụp" : `Đưa ${noun} vào giữa khung`, i:"search" });
@@ -917,6 +1063,8 @@ function evaluate(obs, motion, scene, mode, recipe) {
   g.targetRect = ghost || (subj && anchor && target ? offset(subj, target.x - anchor.x, target.y - anchor.y) : null);
   g.ground = subjectMode;
   g.checks = checks;
+  g.why = why;
+  if (ctx && ctx.horizon) { g.horizonY = ctx.horizon.y; g.horizonSky = !!ctx.horizon.sky; }
   return g;
 }
 
@@ -926,7 +1074,7 @@ function obsToFrame(o, f) {
   const R = (r) => r && ({ x:(r.x - f.x) / f.w, y:(r.y - f.y) / f.h, w:r.w / f.w, h:r.h / f.h });
   return {
     ...o,
-    people: o.people.map(p => ({ face:R(p.face), body:R(p.body) })),
+    people: o.people.map(p => ({ ...p, face:R(p.face), body:R(p.body) })),
     objects: o.objects.map(x => ({ ...x, ...R(x) })),
   };
 }
@@ -945,7 +1093,8 @@ const scanningGuidance = () => ({ scanning:true, score:0, aligned:false, blockin
   subtitle:"Tìm người, chủ thể và độ nghiêng máy", tips:[], icon:"scanning", checks:[] });
 
 function updateScene(obs) {
-  const guess = hasPerson(obs) ? "person" : obs.sceneGuess;
+  let guess = hasPerson(obs) ? "person" : obs.sceneGuess;
+  if (guess === "product") { const sl = salient(obs); if (!sl || area(sl) < 0.12) guess = "landscape"; }
   if (!guess) return;
   st.votes.push(guess); if (st.votes.length > 3) st.votes.shift();
   const last2 = st.votes.slice(-2);
@@ -973,7 +1122,17 @@ function handle(obs) {
     const f = frameRect(), fobs = obsToFrame(obs, f), scene = activeScene();
     const pick = pickRecipe(fobs, st.motion, scene, st.mode);
     st.recipe = pick.recipe; st.recipeAuto = pick.auto;
-    g = guidanceToView(evaluate(fobs, st.motion, scene, st.mode, pick.recipe), f);
+    const ctxNow = st.ctx ? { ...st.ctx, side:st.side } : { side:st.side };
+    const raw = evaluate(fobs, st.motion, scene, st.mode, pick.recipe, ctxNow);
+    // đổi bên 1/3 chỉ khi gợi ý mới giữ nguyên ~0,8 giây
+    if (raw.side && raw.side !== st.side) {
+      st.sideVotes = (st.sideVotes || 0) + 1;
+      if (st.side == null || st.sideVotes >= 8) { st.side = raw.side; st.sideVotes = 0; }
+    } else st.sideVotes = 0;
+    g = raw.side && raw.side !== st.side && st.side != null
+      ? evaluate(fobs, st.motion, scene, st.mode, pick.recipe, { ...ctxNow, noHint:true })
+      : raw;
+    g = guidanceToView(g, f);
   }
 
   st.smoothed = st.smoothed === 0 ? g.score : st.smoothed * 0.7 + g.score * 0.3;
@@ -1009,6 +1168,13 @@ function loop() {
   if (st.coachOn && $("review").hidden) {
     let obs = { people:[], objects:[] };
     try { if (st.ai.status === "ready") obs = analyzeFrame(now); } catch (e) { console.warn(e); }
+    if (now - (st.lastCtxRun || 0) > 400) {
+      st.lastCtxRun = now;
+      try {
+        const { crop } = videoMapper(), f = frameRect();
+        st.ctx = smoothContext(analyzeContext(video, crop.sx + f.x * crop.sw, crop.sy + f.y * crop.sh, crop.sw * f.w, crop.sh * f.h));
+      } catch (e) { console.warn(e); }
+    }
     handle(obs);
   }
   render();
@@ -1087,6 +1253,15 @@ function draw() {
       ctx.lineTo(ex - 9 * Math.cos(an + Math.PI / 6), ey - 9 * Math.sin(an + Math.PI / 6));
       ctx.stroke();
     }
+  }
+  if (g.horizonY != null && !g.scanning) {
+    const yy = fy + g.horizonY * fh;
+    ctx.save(); ctx.setLineDash([3, 6]); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(142,201,255,.8)";
+    ctx.beginPath(); ctx.moveTo(fx + 8, yy); ctx.lineTo(fx + fw - 8, yy); ctx.stroke(); ctx.restore();
+    ctx.font = "600 11px 'IBM Plex Sans', sans-serif"; ctx.textAlign = "right"; ctx.lineJoin = "round";
+    const label = g.horizonSky ? "chân trời" : "đường ngang chính";
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(13,14,12,.75)"; ctx.strokeText(label, fx + fw - 10, yy - 6);
+    ctx.fillStyle = "#8EC9FF"; ctx.fillText(label, fx + fw - 10, yy - 6);
   }
   if (g.tilt != null) {
     const cx = w / 2, cy = fy + fh * 0.84, ok = Math.abs(g.tilt) < 1, col = ok ? "#8EC9FF" : "#F2A93B";
@@ -1247,9 +1422,12 @@ async function scoreImage(img, motion) {
   const W = img.naturalWidth, H = img.naturalHeight;
   const map = makeMapper(W, H, W, H);
   const obs = buildObservation(m.pose.detect(img), m.obj.detect(img), m.cls.classify(img), map, W, H);
-  const scene = st.sceneSel || (hasPerson(obs) ? "person" : obs.sceneGuess || "product");
-  const recipe = bestRecipe(obs, motion, scene, "camera");
-  const g = evaluate(obs, motion, scene, "camera", recipe);
+  const raw = analyzeContext(img, 0, 0, W, H);
+  const ictx = raw ? { horizon:raw.horizon ? { y:raw.horizon.y, sky:raw.horizon.sky } : null, colE:raw.colE, skyTexture:raw.skyTexture } : null;
+  let scene = st.sceneSel || (hasPerson(obs) ? "person" : obs.sceneGuess || "product");
+  if (!st.sceneSel && scene === "product") { const sl = salient(obs); if (!sl || area(sl) < 0.12) scene = "landscape"; }
+  const recipe = bestRecipe(obs, motion, scene, "camera", ictx);
+  const g = evaluate(obs, motion, scene, "camera", recipe, ictx);
   return { score:g.score, checks:g.checks, scene, recipe };
 }
 
@@ -1290,7 +1468,7 @@ function openReview(blob, source, motion) {
 }
 function closeReview() {
   $("review").hidden = true;
-  st.sessionStart = performance.now(); st.smoothed = 0; st.guidance = scanningGuidance();
+  st.sessionStart = performance.now(); st.smoothed = 0; st.guidance = scanningGuidance(); st.side = null;
 }
 async function saveReview() {
   if (!reviewBlob) return;
@@ -1464,7 +1642,7 @@ autoStart();
 
 // Móc kiểm thử: chỉ bật khi mở trang với ?test
 if (new URLSearchParams(location.search).has("test")) {
-  window.__coach = { st, S, RECIPES:()=>RECIPES, pickRecipe, detectContent, layoutVideo, frameRect, setS, videoMapper, evaluate, handle, render, renderChips, buildObservation, makeMapper, personFromLandmarks, onOrientation, capture, openReview };
+  window.__coach = { st, S, analyzeContext, chooseThird, RECIPES:()=>RECIPES, pickRecipe, detectContent, layoutVideo, frameRect, setS, videoMapper, evaluate, handle, render, renderChips, buildObservation, makeMapper, personFromLandmarks, onOrientation, capture, openReview };
 }
 </script>
 </body>
