@@ -100,6 +100,11 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .framebtn{position:absolute;left:0;height:36px;padding:0 12px;border-radius:18px;background:rgba(13,14,12,.8);
   font-family:var(--mono);font-size:12px;border:1px solid rgba(242,239,230,.35)}
 
+.paused{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  padding:28px;text-align:center;background:rgba(13,14,12,.86);width:100%;border:0;color:var(--text)}
+.paused b{font-size:20px;font-weight:600}
+.paused span{font-size:14px;color:var(--muted);line-height:1.5;max-width:300px}
+.paused i{font-style:normal;margin-top:6px;height:44px;padding:0 22px;border-radius:22px;background:var(--guide);color:var(--bg);font-weight:600;display:flex;align-items:center}
 .start{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:28px;
   background:var(--bg);text-align:left}
 .start h1{margin:0;font-size:28px;line-height:1.15;font-weight:600;letter-spacing:-.01em}
@@ -218,6 +223,11 @@ button{cursor:pointer;border:0;background:none;padding:0}
         <div class="zoom" id="zoom"></div>
       </div>
     </div>
+    <button class="paused" id="paused" hidden>
+      <b>Camera đang tạm nghỉ</b>
+      <span id="pausedWhy">Máy nằm yên một lúc nên app tạm dừng camera và AI để máy mát, đỡ tốn pin.</span>
+      <i>Chạm để tiếp tục</i>
+    </button>
     <div class="start" id="start">
       <h1>Canh góc đẹp trước khi chụp</h1>
       <p>AI nhìn khung hình, bảo bạn xoay máy hay dịch người vào đâu. Canh xong, mở Camera của iPhone để chụp với chất lượng đầy đủ.</p>
@@ -279,6 +289,14 @@ button{cursor:pointer;border:0;background:none;padding:0}
     <div class="row"><label for="optText">Chữ hướng dẫn trên khung ngắm</label><input type="checkbox" class="switch" id="optText"></div>
     <div class="row"><label for="optVoice">Đọc chỉ dẫn bằng giọng nói</label><input type="checkbox" class="switch" id="optVoice"></div>
   </div>
+
+  <div class="group">Pin và nhiệt độ</div>
+  <div class="box">
+    <div class="row"><label for="optSaver">Tiết kiệm pin</label><input type="checkbox" class="switch" id="optSaver"></div>
+    <div class="row"><label for="optAutoPause">Tự tạm dừng khi không dùng</label><input type="checkbox" class="switch" id="optAutoPause"></div>
+  </div>
+  <p class="note">Tiết kiệm pin: hình xem trước nhỏ hơn và AI phân tích thưa hơn, máy mát hơn nhưng chỉ dẫn phản hồi chậm hơn một chút. Tự tạm dừng: máy nằm yên 30 giây, hoặc 3 phút không chạm, thì app nghỉ camera và AI.</p>
+  <p class="note" id="perfInfo"></p>
 
   <div class="group">Lưới bố cục</div>
   <div class="seg" id="gridSeg">
@@ -367,14 +385,14 @@ const MODELS = {
   classify: "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
 };
 
-const APP_VERSION = "1.4";
+const APP_VERSION = "1.5";
 const $ = (id) => document.getElementById(id);
 const video = $("video"), canvas = $("ov"), vf = $("vf");
 const ctx = canvas.getContext("2d");
 
 /* ---------------- settings ---------------- */
 const S = (() => {
-  const d = { recipeSel:{}, threshold:90, voice:false, text:true, level:"balanced", grid:"thirds",
+  const d = { recipeSel:{}, saver:false, autoPause:true, threshold:90, voice:false, text:true, level:"balanced", grid:"thirds",
               shortcutName:"Coach Camera", shortcutReady:false, frame:"4:3" };
   try { return Object.assign(d, JSON.parse(localStorage.getItem("coach.settings") || "{}")); } catch { return d; }
 })();
@@ -446,7 +464,9 @@ function onOrientation(e) {
     const dot = Math.max(-1, Math.min(1, m.dx*dx + m.dy*dy + m.dz*dz));
     maxA = Math.max(maxA, Math.acos(dot) * 180 / Math.PI);
   }
-  st.motion = { roll, down, steady: motionHist.length > 4 && maxA < 1.5, ok:true };
+  const steady = motionHist.length > 4 && maxA < 1.5;
+  st.motion = { roll, down, steady, ok:true };
+  if (steady) { if (!st.steadySince) st.steadySince = now; } else st.steadySince = 0;
 }
 function listenMotion() {
   if (st.motionListening) return;
@@ -479,7 +499,8 @@ async function startCamera() {
   stopCamera();
   st.stream = await navigator.mediaDevices.getUserMedia({
     audio:false,
-    video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1920 }, height:{ ideal:1440 } },
+    video:{ facingMode:{ ideal:"environment" }, width:{ ideal: S.saver ? 960 : 1280 }, height:{ ideal: S.saver ? 720 : 960 },
+            frameRate:{ ideal: S.saver ? 24 : 30, max:30 } },
   });
   video.srcObject = st.stream;
   await video.play().catch(() => {});
@@ -694,8 +715,12 @@ function analyzeFrame(now) {
   const map = videoMapper();
   const poseRes = st.ai.pose ? st.ai.pose.detectForVideo(video, now) : null;
   let objRes = null, clsRes = null;
-  if (st.ai.obj && now - st.lastObjRun > 300) { objRes = st.ai.obj.detectForVideo(video, now); st.lastObjRun = now; }
-  if (st.ai.cls && now - st.lastClsRun > 1000) { clsRes = st.ai.cls.classifyForVideo(video, now); st.lastClsRun = now; }
+  // đang chụp người thì ít cần nhận diện đồ vật và phân loại cảnh: chạy thưa hẳn
+  const personMode = activeScene() === "person";
+  const k = S.saver ? 2 : 1;
+  const objEvery = (personMode ? 2500 : 700) * k, clsEvery = (personMode ? 4000 : 2000) * k;
+  if (st.ai.obj && now - st.lastObjRun > objEvery) { objRes = st.ai.obj.detectForVideo(video, now); st.lastObjRun = now; }
+  if (st.ai.cls && now - st.lastClsRun > clsEvery) { clsRes = st.ai.cls.classifyForVideo(video, now); st.lastClsRun = now; }
   const obs = buildObservation(poseRes, objRes, clsRes, map, vw, vh);
   if (objRes) st.objects = obs.objects; else obs.objects = st.objects;   // giữ kết quả vật thể giữa các lần chạy
   return obs;
@@ -1173,16 +1198,41 @@ function handle(obs) {
 /* =========================================================
    6. Vòng lặp + vẽ
    ========================================================= */
+/* Vòng lặp tự điều nhịp: AI chạy khoảng 4–6 lần/giây, thưa hơn khi đã canh chuẩn,
+   khi máy chạy chậm (tránh nóng máy) hoặc khi bật Tiết kiệm pin. */
+const sheetOpen = () => [...document.querySelectorAll(".sheet")].some(el => !el.hidden);
+function nextInterval() {
+  let base = S.saver ? 350 : 180;
+  const g = st.guidance;
+  if (g && g.aligned && st.motion.steady) base *= 2;           // đã chuẩn và đứng yên: không cần phân tích dày
+  if (!st.coachOn || sheetOpen()) base = 600;                   // chỉ vẽ lại, không phân tích
+  return Math.max(base, (st.costEMA || 0) * 3);                 // AI dùng tối đa ~1/3 thời gian
+}
 function loop() {
-  if (!st.running) return;
-  requestAnimationFrame(loop);
-  const now = performance.now();
-  if (now - st.lastRun < 100 || video.readyState < 2 || !video.videoWidth) return;
-  st.lastRun = now;
-  if (st.coachOn && $("review").hidden) {
+  clearTimeout(st.loopTimer);
+  if (!st.running || st.paused || document.hidden) return;
+  const t0 = performance.now();
+  try { tick(t0); } catch (e) { console.warn(e); }
+  const cost = performance.now() - t0;
+  st.costEMA = st.costEMA ? st.costEMA * 0.85 + cost * 0.15 : cost;
+  st.ticks = (st.ticks || 0) + 1;
+  st.loopTimer = setTimeout(loop, nextInterval());
+}
+function maybeAutoPause(now) {
+  if (!S.autoPause || st.paused) return;
+  const idle = now - (st.lastTouch || now);
+  const lyingStill = st.motion.ok && st.steadySince && now - st.steadySince > 30000 && idle > 30000;
+  if (lyingStill) pauseApp("Máy nằm yên một lúc nên app tạm dừng camera và AI để máy mát, đỡ tốn pin.");
+  else if (idle > 3 * 60000) pauseApp("Đã 3 phút không chạm vào màn hình nên app tạm dừng camera và AI để máy mát, đỡ tốn pin.");
+}
+function tick(now) {
+  if (video.readyState < 2 || !video.videoWidth) return;
+  maybeAutoPause(now);
+  if (st.paused) return;
+  if (st.coachOn && !sheetOpen()) {
     let obs = { people:[], objects:[] };
     try { if (st.ai.status === "ready") obs = analyzeFrame(now); } catch (e) { console.warn(e); }
-    if (now - (st.lastCtxRun || 0) > 400) {
+    if (now - (st.lastCtxRun || 0) > (S.saver ? 1600 : 800)) {
       st.lastCtxRun = now;
       try {
         const { crop } = videoMapper(), f = frameRect();
@@ -1192,6 +1242,28 @@ function loop() {
     handle(obs);
   }
   render();
+}
+
+function setTracksEnabled(on) {
+  if (st.stream) st.stream.getVideoTracks().forEach(t => { t.enabled = on; });
+}
+function pauseApp(why) {
+  st.paused = true;
+  clearTimeout(st.loopTimer);
+  setTracksEnabled(false);          // tắt luồng camera nhưng giữ quyền: tiếp tục không cần hỏi lại
+  video.pause();
+  $("pausedWhy").textContent = why;
+  $("paused").hidden = false;
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+async function resumeApp() {
+  $("paused").hidden = true;
+  st.paused = false; st.lastTouch = performance.now(); st.steadySince = 0;
+  setTracksEnabled(true);
+  if (!cameraAlive()) { try { await startCamera(); } catch { st.running = false; $("start").hidden = false; return; } }
+  video.play().catch(() => {});
+  st.sessionStart = performance.now(); st.smoothed = 0; st.guidance = scanningGuidance();
+  loop();
 }
 
 function sizeCanvas() {
@@ -1606,6 +1678,9 @@ function syncSettingsUI() {
     : "";
   $("levelNote").textContent = LEVEL_NOTES[S.level];
   $("optText").checked = S.text; $("optVoice").checked = S.voice;
+  $("optSaver").checked = S.saver; $("optAutoPause").checked = S.autoPause;
+  const rate = st.costEMA ? Math.min(1000 / nextInterval(), 10) : 0;
+  $("perfInfo").textContent = st.costEMA ? `Hiện tại: AI mất khoảng ${Math.round(st.costEMA)} ms mỗi lần, chạy khoảng ${rate.toFixed(1)} lần mỗi giây.` : "";
   $("recipeInfo").textContent = `Kiểu chụp đang có: ${RECIPES.length}` + (recipesFromFile ? ` (${recipesFromFile} từ file recipes.json)` : "");
   $("thrVal").textContent = S.threshold; $("optShortcut").value = S.shortcutName;
 }
@@ -1617,7 +1692,7 @@ $("updateBtn").onclick = applyUpdate;
 $("checkUpdateBtn").onclick = () => checkUpdate(true);
 $("recipesDone").onclick = () => closeSheet("recipes");
 $("settingsBtn").onclick = () => openSheet("settings");
-$("settingsDone").onclick = () => closeSheet("settings");
+$("settingsDone").onclick = () => { closeSheet("settings"); loop(); };
 $("levelSeg").onclick = (e) => { const v = e.target.closest("button")?.dataset.v; if (v) setS("level", v); };
 $("gridSeg").onclick = (e) => { const v = e.target.closest("button")?.dataset.v; if (v) setS("grid", v); };
 $("frameBtn").onclick = () => {
@@ -1627,6 +1702,11 @@ $("frameBtn").onclick = () => {
 };
 $("frameSeg").onclick = (e) => { const v = e.target.closest("button")?.dataset.v; if (v) { setS("frame", v); st.smoothed = 0; } };
 $("optText").onchange = (e) => setS("text", e.target.checked);
+$("optSaver").onchange = async (e) => {
+  setS("saver", e.target.checked);
+  if (st.running && !st.paused) { try { await startCamera(); } catch {} }   // đổi độ phân giải xem trước
+};
+$("optAutoPause").onchange = (e) => setS("autoPause", e.target.checked);
 $("optVoice").onchange = (e) => { setS("voice", e.target.checked); if (e.target.checked) say("Đã bật giọng nói", true); };
 $("thrDown").onclick = () => setS("threshold", Math.max(75, S.threshold - 1));
 $("thrUp").onclick = () => setS("threshold", Math.min(98, S.threshold + 1));
@@ -1657,7 +1737,7 @@ async function begin(fromTap) {
     await startCamera();
     markCamOK(true);
     $("start").hidden = true;
-    st.running = true; st.sessionStart = performance.now(); st.guidance = scanningGuidance();
+    st.running = true; st.sessionStart = performance.now(); st.guidance = scanningGuidance(); st.lastTouch = performance.now();
     renderChips(); syncTopBar();
     loadAI();
     loop();
@@ -1673,6 +1753,8 @@ async function begin(fromTap) {
   }
 }
 $("startBtn").onclick = () => begin(true);
+$("paused").onclick = resumeApp;
+document.addEventListener("pointerdown", () => { st.lastTouch = performance.now(); }, true);
 
 /* Đã cho phép camera từ lần trước: mở thẳng camera, không cần bấm "Bật camera". */
 async function autoStart() {
@@ -1686,7 +1768,11 @@ async function autoStart() {
 
 document.addEventListener("visibilitychange", async () => {
   if (!document.hidden) checkUpdate();
-  if (document.hidden || !st.running) return;
+  if (!st.running) return;
+  if (document.hidden) { clearTimeout(st.loopTimer); if (!st.paused) setTracksEnabled(false); return; }
+  if (st.paused) return;                           // đang tạm nghỉ: chờ người dùng chạm
+  st.lastTouch = performance.now(); st.steadySince = 0;
+  setTracksEnabled(true);
   if (cameraAlive()) {
     video.play().catch(() => {});                 // camera vẫn còn: chạy tiếp, không xin lại quyền
     scheduleContentCheck();
@@ -1694,6 +1780,7 @@ document.addEventListener("visibilitychange", async () => {
     try { await startCamera(); } catch { st.running = false; $("start").hidden = false; }
   }
   st.sessionStart = performance.now(); st.smoothed = 0;
+  loop();
 });
 
 syncTopBar();
@@ -1706,7 +1793,7 @@ setInterval(() => { if (!document.hidden) checkUpdate(); }, 10 * 60 * 1000);
 
 // Móc kiểm thử: chỉ bật khi mở trang với ?test
 if (new URLSearchParams(location.search).has("test")) {
-  window.__coach = { st, S, analyzeContext, chooseThird, RECIPES:()=>RECIPES, pickRecipe, detectContent, layoutVideo, frameRect, setS, videoMapper, evaluate, handle, render, renderChips, buildObservation, makeMapper, personFromLandmarks, onOrientation, capture, openReview };
+  window.__coach = { st, S, pauseApp, resumeApp, nextInterval, analyzeContext, chooseThird, RECIPES:()=>RECIPES, pickRecipe, detectContent, layoutVideo, frameRect, setS, videoMapper, evaluate, handle, render, renderChips, buildObservation, makeMapper, personFromLandmarks, onOrientation, capture, openReview };
 }
 </script>
 </body>

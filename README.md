@@ -90,6 +90,14 @@ Thước cân bằng dùng cảm biến nghiêng. Nếu iOS cần hỏi lại qu
 
 Sửa `recipes.json` trên GitHub, chờ 1–2 phút, tắt hẳn app rồi mở lại. Cài đặt → cuối trang ghi số kiểu chụp đang có.
 
+## Pin và nhiệt độ
+
+- Hình xem trước ở khoảng 1280×960 (ảnh đẹp đã có Camera gốc lo), AI chạy khoảng 4–6 lần mỗi giây và tự chạy thưa lại khi đã canh chuẩn hoặc khi máy xử lý chậm.
+- Đang chụp người thì nhận diện đồ vật và phân loại cảnh chỉ chạy vài giây một lần.
+- **Tự tạm dừng** (mặc định bật): máy nằm yên 30 giây hoặc 3 phút không chạm thì app nghỉ camera và AI. Chạm để tiếp tục, không phải cấp quyền lại.
+- **Tiết kiệm pin** (Cài đặt): hình xem trước nhỏ hơn, AI chạy thưa gấp đôi.
+- Cài đặt → Pin và nhiệt độ ghi số mili giây AI mất cho mỗi lần phân tích, để biết máy có đang quá tải không.
+
 ## Cập nhật phiên bản mới
 
 App tự kiểm tra file `version.json` trên GitHub mỗi lần mở, mỗi khi quay lại app và 10 phút một lần. Khi có bản mới, trên cùng màn hình hiện nút **"Cập nhật 1.x"**. Bấm vào là app tải bản mới và mở lại. Trong Cài đặt có nút **Kiểm tra cập nhật**.
