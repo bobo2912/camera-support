@@ -1,0 +1,148 @@
+{
+  "_huong_dan": "Mỗi kiểu chụp là một mục trong recipes. Thêm kiểu mới hoặc sửa kiểu cũ (trùng id) rồi tải file này lên GitHub. Xem README phần Kiểu chụp để biết ý nghĩa từng trường.",
+  "recipes": [
+    {
+      "id": "nguoi-1-3",
+      "scene": "person",
+      "name": "Chân dung 1/3",
+      "source": "Có sẵn",
+      "howto": "Mắt ngang đường lưới trên, người đứng ở đường 1/3 trái hoặc phải. Nhóm người hoặc chụp cận thì đặt giữa.",
+      "subject": {
+        "x": "thirds",
+        "y": "top-third",
+        "anchor": "face"
+      },
+      "groupCenter": true,
+      "size": {
+        "metric": "face",
+        "min": 0.04,
+        "max": 0.5
+      }
+    },
+    {
+      "id": "nguoi-can-mat",
+      "scene": "person",
+      "name": "Cận mặt",
+      "source": "Có sẵn",
+      "howto": "Mặt ở giữa, hơi cao hơn tâm khung. Tiến gần hoặc zoom 2× để mặt chiếm khoảng 1/3 bề ngang.",
+      "subject": {
+        "x": "center",
+        "y": 0.42,
+        "anchor": "face"
+      },
+      "size": {
+        "metric": "face",
+        "min": 0.22,
+        "max": 0.55
+      },
+      "auto": false
+    },
+    {
+      "id": "nguoi-toan-than-chan-dai",
+      "scene": "person",
+      "name": "Toàn thân, chân dài",
+      "source": "Có sẵn",
+      "howto": "Hạ máy ngang hông, ngửa nhẹ lên. Đặt bàn chân sát mép dưới khung để dáng người trông cao hơn.",
+      "subject": {
+        "x": "center",
+        "y": 0.95,
+        "anchor": "feet"
+      },
+      "size": {
+        "metric": "body",
+        "min": 0.7,
+        "max": 0.93
+      },
+      "camera": {
+        "down": [
+          95,
+          112
+        ],
+        "raise": "Hạ máy xuống ngang hông rồi ngửa lên",
+        "lower": "Ngửa máy ít thôi"
+      },
+      "hint": "Giữ máy thấp, chân chạm sát mép dưới",
+      "pose": "Bạn đứng thẳng, dồn trọng tâm sang một chân, chân kia hơi đưa lên trước",
+      "auto": false
+    },
+    {
+      "id": "phong-canh-1-3",
+      "scene": "landscape",
+      "name": "Phong cảnh 1/3",
+      "source": "Có sẵn",
+      "howto": "Giữ máy thật thẳng. Đặt điểm nhấn (cây, người, ngọn núi) ở một giao điểm của lưới.",
+      "subject": {
+        "x": "thirds",
+        "y": "thirds",
+        "anchor": "center"
+      },
+      "weight": 0.5,
+      "requireSubject": false,
+      "maxSubjectArea": 0.35
+    },
+    {
+      "id": "do-an-tu-tren",
+      "scene": "food",
+      "name": "Món ăn từ trên xuống",
+      "source": "Có sẵn",
+      "howto": "Đưa máy thẳng trên bàn, song song mặt bàn. Hợp với bàn nhiều món, đồ ăn phẳng.",
+      "subject": {
+        "x": "center",
+        "y": "center",
+        "anchor": "center"
+      },
+      "size": {
+        "metric": "area",
+        "min": 0.12,
+        "max": 0.9
+      },
+      "camera": {
+        "down": [
+          0,
+          8
+        ],
+        "lower": "Đưa máy thẳng trên món ăn"
+      }
+    },
+    {
+      "id": "do-an-cheo-45",
+      "scene": "food",
+      "name": "Món ăn chéo 45°",
+      "source": "Có sẵn",
+      "howto": "Nghiêng máy khoảng 45°. Hợp với món có chiều cao: bánh, ly nước, tô phở.",
+      "subject": {
+        "x": "center",
+        "y": "center",
+        "anchor": "center"
+      },
+      "size": {
+        "metric": "area",
+        "min": 0.12,
+        "max": 0.9
+      },
+      "camera": {
+        "down": [
+          35,
+          55
+        ]
+      }
+    },
+    {
+      "id": "san-pham-giua",
+      "scene": "product",
+      "name": "Sản phẩm giữa khung",
+      "source": "Có sẵn",
+      "howto": "Đặt sản phẩm giữa khung, chừa khoảng trống đều bốn phía.",
+      "subject": {
+        "x": "center",
+        "y": "center",
+        "anchor": "center"
+      },
+      "size": {
+        "metric": "area",
+        "min": 0.1,
+        "max": 0.75
+      }
+    }
+  ]
+}

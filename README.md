@@ -33,7 +33,53 @@ Bấm **Camera gốc** lần đầu, app hiện hướng dẫn:
 1. App **Phím tắt** → **+** → Thêm tác vụ → gõ "Camera" → chọn tác vụ mở Camera. Đặt tên Shortcut là **Coach Camera**.
 2. **Cài đặt → Camera** → bật **Lưới** và **Cân bằng**, để khi sang Camera gốc vẫn có mốc giữ đúng góc.
 3. **Cho khung ảnh khớp nhau**: nút nhỏ ở góc dưới bên trái khung ngắm (4:3 / 16:9 / 1:1) phải trùng với tỉ lệ đang chọn trong app Camera. Nếu Camera để 16:9 mà app để 4:3, phần hai bên sẽ bị cắt mất. Giữ zoom 1× ở cả hai app.
-4. Chụp xong, vuốt thanh ngang dưới đáy màn hình sang phải để quay lại Camera Coach. App sẽ hỏi có muốn chấm điểm ảnh vừa chụp không.
+4. Chụp xong, vuốt thanh ngang dưới đáy màn hình sang phải để quay lại Camera Coach. Muốn chấm điểm ảnh vừa chụp, bấm nút ảnh nhỏ bên trái nút chụp.
+
+## Không phải cấp quyền camera mỗi lần
+
+Từ bản 1.2, nếu bạn đã cho phép camera một lần, app mở thẳng vào camera, không cần bấm "Bật camera".
+Quyền camera do iOS quản lý. Để iOS không hỏi lại:
+
+- **Cài đặt → Ứng dụng → Safari → Camera → Cho phép** (iOS cũ hơn: Cài đặt → Safari → Camera).
+- Hoặc mở link app trong Safari → nút **aA** trên thanh địa chỉ → **Cài đặt trang web** → **Camera: Cho phép**.
+
+Thước cân bằng dùng cảm biến nghiêng. Nếu iOS cần hỏi lại quyền này, chỉ cần chạm vào màn hình một lần.
+
+## Kiểu chụp (recipes.json)
+
+"Gu" bố cục của AI nằm trong file `recipes.json`. Mỗi kiểu chụp là một mục:
+
+```json
+{
+  "id": "nguoi-toan-than-chan-dai",
+  "scene": "person",
+  "name": "Toàn thân, chân dài",
+  "source": "Video TikTok của @...",
+  "howto": "Hạ máy ngang hông, ngửa nhẹ lên...",
+  "auto": false,
+  "subject": { "x": "center", "y": 0.95, "anchor": "feet" },
+  "size": { "metric": "body", "min": 0.7, "max": 0.93 },
+  "camera": { "down": [95, 112], "raise": "Hạ máy xuống ngang hông rồi ngửa lên" },
+  "hint": "Giữ máy thấp, chân chạm sát mép dưới",
+  "pose": "Bạn đứng thẳng, dồn trọng tâm sang một chân"
+}
+```
+
+| Trường | Ý nghĩa |
+|---|---|
+| `scene` | `person` (người), `landscape` (phong cảnh), `food` (đồ ăn), `product` (sản phẩm) |
+| `auto` | `false` = chỉ dùng khi bạn chọn tay. Bỏ trống = AI được tự chọn |
+| `subject.x` | Chủ thể nằm ở đâu theo chiều ngang: `"thirds"` (đường 1/3 gần nhất), `"left-third"`, `"right-third"`, `"center"` hoặc số 0–1 |
+| `subject.y` | Theo chiều dọc: `"top-third"`, `"bottom-third"`, `"thirds"`, `"center"` hoặc số 0–1 (0 = mép trên) |
+| `subject.anchor` | Điểm nào của chủ thể đặt vào vị trí trên: `face` (mặt), `feet` (bàn chân), `center` (giữa) |
+| `size` | Độ lớn chủ thể: `metric` là `face` (bề ngang mặt / bề ngang khung), `body` (chiều cao người / chiều cao khung) hoặc `area` (diện tích); `min`, `max` từ 0 đến 1 |
+| `camera.down` | Khoảng góc máy cho phép, độ: 0 = chĩa thẳng xuống đất, 90 = cầm thẳng, trên 90 = ngửa lên |
+| `camera.raise` / `camera.lower` | Câu nhắc khi cần ngửa lên / chúc xuống |
+| `hint` | Câu hiện khi đã đạt chuẩn |
+| `pose` | Câu đọc cho người được chụp khi đạt chuẩn (chế độ Chỉnh người) |
+| `weight` | Mức quan trọng của vị trí, 1 là bình thường |
+
+Sửa `recipes.json` trên GitHub, chờ 1–2 phút, tắt hẳn app rồi mở lại. Cài đặt → cuối trang ghi số kiểu chụp đang có.
 
 ## Sửa app sau này
 

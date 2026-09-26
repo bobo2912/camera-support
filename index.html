@@ -36,14 +36,14 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .app{height:100dvh;display:flex;flex-direction:column;padding-top:var(--sat);padding-bottom:var(--sab)}
 
 /* top bar */
-.top{height:56px;flex:none;display:flex;align-items:center;gap:8px;padding:0 14px}
+.top{height:56px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px}
 .round{width:44px;height:44px;border-radius:22px;background:var(--chip);display:grid;place-items:center;color:var(--text)}
 .round svg{width:20px;height:20px}
 .pill{height:36px;padding:0 12px;border-radius:18px;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;
   background:var(--chip);border:1px solid var(--line);color:var(--muted)}
 .pill svg{width:16px;height:16px}
 .pill.on{background:var(--good);border-color:var(--good);color:var(--bg)}
-.coach-pill{margin-left:auto;font-size:14px;color:var(--guide);border-color:var(--guide)}
+.coach-pill{font-size:14px;color:var(--guide);border-color:var(--guide)}
 .coach-pill .dot{width:8px;height:8px;border-radius:4px;background:currentColor}
 .coach-pill.ok{color:var(--good);border-color:var(--good)}
 .coach-pill.off{color:var(--muted);border-color:var(--line)}
@@ -76,6 +76,18 @@ button{cursor:pointer;border:0;background:none;padding:0}
   display:flex;align-items:center;gap:5px;border:1px solid transparent}
 .chip[aria-pressed="true"]{border-color:var(--guide);color:var(--guide);font-weight:600;background:rgba(13,14,12,.86)}
 .chip svg{width:12px;height:12px}
+.recipe-pill{align-self:flex-start;height:30px;padding:0 12px;border-radius:15px;background:rgba(13,14,12,.8);font-size:12px;
+  display:flex;align-items:center;gap:6px;color:var(--text);border:1px solid rgba(242,239,230,.3)}
+.recipe-pill b{font-weight:600;color:var(--guide)}
+.recipe-pill svg{width:12px;height:12px}
+.rlist{display:flex;flex-direction:column;gap:8px}
+.ritem{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:14px;border-radius:14px;background:var(--panel);border:1px solid transparent;width:100%}
+.ritem[aria-pressed="true"]{border-color:var(--guide)}
+.ritem .rdot{flex:none;width:18px;height:18px;border-radius:9px;border:2px solid var(--line);margin-top:2px}
+.ritem[aria-pressed="true"] .rdot{border-color:var(--guide);background:radial-gradient(var(--guide) 45%,transparent 50%)}
+.ritem b{display:block;font-size:15px;font-weight:600}
+.ritem span{display:block;font-size:13px;color:var(--muted);line-height:1.45;margin-top:3px}
+.ritem small{display:block;font-size:12px;color:var(--muted);opacity:.8;margin-top:4px}
 .zoom{margin-top:auto;align-self:center;display:flex;gap:8px}
 .zoom button{min-width:36px;height:36px;padding:0 6px;border-radius:18px;background:rgba(13,14,12,.66);font-size:12px;font-weight:600}
 .zoom button[aria-pressed="true"]{color:var(--guide);background:rgba(13,14,12,.86)}
@@ -117,12 +129,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .choice svg{width:26px;height:26px}
 .scoreline{flex:none;text-align:center;font-size:13px;color:var(--muted);padding:2px 12px 8px;min-height:26px}
 
-/* banner, toast */
-.banner{position:fixed;left:12px;right:12px;top:calc(var(--sat) + 60px);z-index:15;display:flex;align-items:center;gap:10px;
-  padding:6px 4px 6px 14px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
-.banner span{flex:1;font-size:14px;font-weight:500}
-.filebtn{position:relative;height:38px;padding:0 14px;border-radius:19px;background:var(--guide);color:var(--bg);font-weight:600;
-  font-size:14px;display:flex;align-items:center;overflow:hidden}
+/* toast */
 .toast{position:fixed;left:50%;bottom:calc(var(--sab) + 120px);transform:translateX(-50%);z-index:40;max-width:88vw;
   padding:10px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:14px;text-align:center}
 
@@ -174,10 +181,6 @@ button{cursor:pointer;border:0;background:none;padding:0}
 <body>
 <div class="app" id="app">
   <div class="top">
-    <button class="pill hit" id="autoBtn" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>
-      Tự chụp
-    </button>
     <button class="pill coach-pill hit" id="coachBtn" aria-pressed="true"><span class="dot"></span>AI Coach</button>
     <button class="round" id="settingsBtn" aria-label="Cài đặt">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
@@ -201,8 +204,9 @@ button{cursor:pointer;border:0;background:none;padding:0}
         </button>
       </div>
       <div class="chips" id="chips"></div>
+      <button class="recipe-pill" id="recipeBtn" aria-label="Chọn kiểu chụp"></button>
       <div class="bottomrow">
-        <button class="framebtn hit" id="frameBtn" aria-label="Đổi khung ảnh cho khớp Camera gốc">4:3</button>
+        <button class="framebtn hit" id="frameBtn" aria-label="Đổi khung ảnh cho khớp Camera gốc">Khung 4:3</button>
         <div class="zoom" id="zoom"></div>
       </div>
     </div>
@@ -251,14 +255,6 @@ button{cursor:pointer;border:0;background:none;padding:0}
   <div class="scoreline" id="scoreline"></div>
 </div>
 
-<div class="banner" id="banner" hidden>
-  <span>Chấm điểm ảnh vừa chụp bằng Camera gốc?</span>
-  <label class="filebtn">Chọn ảnh<input type="file" accept="image/*" id="bannerInput"></label>
-  <button class="round" id="bannerClose" aria-label="Đóng" style="background:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-  </button>
-</div>
-
 <div class="toast" id="toast" role="status" hidden></div>
 
 <!-- Settings -->
@@ -281,14 +277,13 @@ button{cursor:pointer;border:0;background:none;padding:0}
     <button data-v="thirds">1/3</button><button data-v="golden">Tỉ lệ vàng</button><button data-v="off">Tắt</button>
   </div>
 
-  <div class="group">Tự chụp</div>
+  <div class="group">Mức đạt chuẩn</div>
   <div class="box">
-    <div class="row"><label for="optAuto">Tự chụp khi đạt chuẩn</label><input type="checkbox" class="switch" id="optAuto"></div>
-    <div class="row"><span style="font-size:15px">Ngưỡng điểm</span>
-      <div class="stepper"><button id="thrDown" aria-label="Giảm ngưỡng">−</button><span class="num" id="thrVal">90</span><button id="thrUp" aria-label="Tăng ngưỡng">+</button></div>
+    <div class="row"><span style="font-size:15px">Điểm để báo “Chuẩn rồi”</span>
+      <div class="stepper"><button id="thrDown" aria-label="Giảm mức">−</button><span class="num" id="thrVal">90</span><button id="thrUp" aria-label="Tăng mức">+</button></div>
     </div>
   </div>
-  <p class="note">Bật: đạt chuẩn và máy đứng yên 1 giây thì app tự chụp, không mở Camera gốc. Tắt: đạt chuẩn thì bạn chọn Camera gốc hoặc Chụp ngay. Ngưỡng cũng quyết định khi nào vòng nút chụp chuyển xanh.</p>
+  <p class="note">Điểm bố cục đạt mức này thì vòng nút chụp chuyển xanh và hiện hai nút Camera gốc / Chụp ngay.</p>
 
   <div class="group">Khung ảnh ở Camera gốc</div>
   <div class="seg" id="frameSeg">
@@ -302,6 +297,8 @@ button{cursor:pointer;border:0;background:none;padding:0}
   <div class="stack"><button class="secondary" id="openSetup">Hướng dẫn cài Shortcut</button></div>
 
   <p class="note" id="camInfo" style="margin-top:22px"></p>
+  <p class="note" id="recipeInfo"></p>
+  <p class="note">Phiên bản 1.2</p>
   <p class="note">Mọi phân tích chạy ngay trên điện thoại. Ảnh không được gửi lên máy chủ, app không dùng API key nào.</p>
 </section>
 
@@ -320,12 +317,20 @@ button{cursor:pointer;border:0;background:none;padding:0}
   </div></div>
   <div class="step"><span class="n">3</span><div>
     <h3>Chụp xong thì quay lại</h3>
-    <p>Vuốt thanh ngang dưới đáy màn hình sang phải để về Camera Coach. App sẽ hỏi có muốn chấm điểm ảnh vừa chụp không.</p>
+    <p>Vuốt thanh ngang dưới đáy màn hình sang phải để về Camera Coach. Muốn chấm điểm ảnh vừa chụp, bấm nút ảnh nhỏ bên trái nút chụp.</p>
   </div></div>
   <div class="stack">
     <button class="secondary" id="setupTest">Chạy thử Shortcut</button>
     <button class="primary" id="setupDone">Tôi đã cài xong</button>
   </div>
+</section>
+
+<!-- Recipes -->
+<section class="sheet" id="recipes" hidden aria-labelledby="recipesTitle">
+  <header><h2 id="recipesTitle">Kiểu chụp</h2><button id="recipesDone">Xong</button></header>
+  <p class="note" id="recipesNote" style="margin:0 2px 14px"></p>
+  <div class="rlist" id="rlist"></div>
+  <p class="note" style="margin-top:18px">Muốn thêm kiểu mới: gửi Claude video, ảnh hoặc tài liệu hướng dẫn chụp. Claude sẽ viết kiểu mới vào file recipes.json, bạn tải file đó lên GitHub là app có ngay.</p>
 </section>
 
 <!-- Review -->
@@ -355,7 +360,7 @@ const ctx = canvas.getContext("2d");
 
 /* ---------------- settings ---------------- */
 const S = (() => {
-  const d = { autoCapture:false, threshold:90, voice:false, text:true, level:"balanced", grid:"thirds",
+  const d = { recipeSel:{}, threshold:90, voice:false, text:true, level:"balanced", grid:"thirds",
               shortcutName:"Coach Camera", shortcutReady:false, frame:"4:3" };
   try { return Object.assign(d, JSON.parse(localStorage.getItem("coach.settings") || "{}")); } catch { return d; }
 })();
@@ -377,12 +382,12 @@ const st = {
   running:false, stream:null, coachOn:true, mode:"camera",
   sceneSel:null, detected:null, votes:[],
   guidance:null, scanning:true, sessionStart:0, smoothed:0,
-  pendingTitle:null, pendingSince:0, alignedSince:null, suppressed:false,
-  countdown:null, cdTimer:null, capturing:false,
+  pendingTitle:null, pendingSince:0, capturing:false,
+  autoRecipe:{}, switchVotes:{},
   obs:null, lastRun:0, lastObjRun:0, lastClsRun:0, objects:[], sceneGuess:null,
   motion:{ roll:0, down:90, steady:false, ok:false },
   ai:{ status:"idle", pose:null, obj:null, cls:null, vision:null, fileset:null, img:null },
-  handoff:false, zoom:1, lastCaptureMotion:null,
+  zoom:1, lastCaptureMotion:null, motionListening:false,
   content:null,   // vùng có hình thật trong luồng video (bỏ viền đen), tính theo pixel video
   layout:null,    // vị trí video đang hiển thị trong khung ngắm
 };
@@ -429,14 +434,27 @@ function onOrientation(e) {
   }
   st.motion = { roll, down, steady: motionHist.length > 4 && maxA < 1.5, ok:true };
 }
+function listenMotion() {
+  if (st.motionListening) return;
+  st.motionListening = true;
+  window.addEventListener("deviceorientation", onOrientation);
+}
+/* iOS chỉ cho xin quyền cảm biến khi người dùng chạm. Nếu đã cấp trước đó, sự kiện tự chạy mà không hỏi lại. */
 async function enableMotion() {
   try {
     if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
       const r = await DeviceOrientationEvent.requestPermission();
       if (r !== "granted") { toast("Chưa có quyền cảm biến nên thước cân bằng tạm tắt."); return; }
     }
-    window.addEventListener("deviceorientation", onOrientation);
-  } catch { /* máy không có cảm biến */ }
+  } catch { /* máy không có cảm biến hoặc không có thao tác chạm */ }
+  listenMotion();
+}
+let motionTapArmed = false;
+function armMotionOnFirstTap() {
+  if (motionTapArmed) return;
+  motionTapArmed = true;
+  const once = () => { document.removeEventListener("pointerdown", once, true); if (!st.motion.ok) enableMotion(); };
+  document.addEventListener("pointerdown", once, true);
 }
 
 /* =========================================================
@@ -659,7 +677,85 @@ function analyzeFrame(now) {
 }
 
 /* =========================================================
-   4. Bộ não bố cục (giống bản Swift)
+   3b. Kiểu chụp (recipes) — "kiến thức bố cục" có thể thêm dần.
+   File recipes.json cùng thư mục sẽ được nạp và ghi đè/bổ sung các kiểu dưới đây.
+   ========================================================= */
+const BUILTIN_RECIPES = [
+  { id:"nguoi-1-3", scene:"person", name:"Chân dung 1/3", source:"Có sẵn",
+    howto:"Mắt ngang đường lưới trên, người đứng ở đường 1/3 trái hoặc phải. Nhóm người hoặc chụp cận thì đặt giữa.",
+    subject:{ x:"thirds", y:"top-third", anchor:"face" }, groupCenter:true, size:{ metric:"face", min:0.04, max:0.5 } },
+  { id:"nguoi-can-mat", scene:"person", name:"Cận mặt", source:"Có sẵn", auto:false,
+    howto:"Mặt ở giữa, hơi cao hơn tâm khung. Tiến gần hoặc zoom 2× để mặt chiếm khoảng 1/3 bề ngang.",
+    subject:{ x:"center", y:0.42, anchor:"face" }, size:{ metric:"face", min:0.22, max:0.55 } },
+  { id:"nguoi-toan-than-chan-dai", scene:"person", name:"Toàn thân, chân dài", source:"Có sẵn", auto:false,
+    howto:"Hạ máy ngang hông, ngửa nhẹ lên. Đặt bàn chân sát mép dưới khung để dáng người trông cao hơn.",
+    subject:{ x:"center", y:0.95, anchor:"feet" }, size:{ metric:"body", min:0.7, max:0.93 },
+    camera:{ down:[95, 112], raise:"Hạ máy xuống ngang hông rồi ngửa lên", lower:"Ngửa máy ít thôi" },
+    hint:"Giữ máy thấp, chân chạm sát mép dưới", pose:"Bạn đứng thẳng, dồn trọng tâm sang một chân, chân kia hơi đưa lên trước" },
+  { id:"phong-canh-1-3", scene:"landscape", name:"Phong cảnh 1/3", source:"Có sẵn",
+    howto:"Giữ máy thật thẳng. Đặt điểm nhấn (cây, người, ngọn núi) ở một giao điểm của lưới.",
+    subject:{ x:"thirds", y:"thirds", anchor:"center" }, weight:0.5, requireSubject:false, maxSubjectArea:0.35 },
+  { id:"do-an-tu-tren", scene:"food", name:"Món ăn từ trên xuống", source:"Có sẵn",
+    howto:"Đưa máy thẳng trên bàn, song song mặt bàn. Hợp với bàn nhiều món, đồ ăn phẳng.",
+    subject:{ x:"center", y:"center", anchor:"center" }, size:{ metric:"area", min:0.12, max:0.9 },
+    camera:{ down:[0, 8], lower:"Đưa máy thẳng trên món ăn" } },
+  { id:"do-an-cheo-45", scene:"food", name:"Món ăn chéo 45°", source:"Có sẵn",
+    howto:"Nghiêng máy khoảng 45°. Hợp với món có chiều cao: bánh, ly nước, tô phở.",
+    subject:{ x:"center", y:"center", anchor:"center" }, size:{ metric:"area", min:0.12, max:0.9 },
+    camera:{ down:[35, 55] } },
+  { id:"san-pham-giua", scene:"product", name:"Sản phẩm giữa khung", source:"Có sẵn",
+    howto:"Đặt sản phẩm giữa khung, chừa khoảng trống đều bốn phía.",
+    subject:{ x:"center", y:"center", anchor:"center" }, size:{ metric:"area", min:0.1, max:0.75 } },
+];
+let RECIPES = BUILTIN_RECIPES.slice();
+let recipesFromFile = 0;
+async function loadRecipes() {
+  try {
+    const res = await fetch("recipes.json", { cache:"no-cache" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : data.recipes;
+    if (!Array.isArray(list)) return;
+    const ok = list.filter(r => r && typeof r.id === "string" && typeof r.name === "string" && SCENES.some(s => s[0] === r.scene));
+    const byId = new Map(BUILTIN_RECIPES.map(r => [r.id, r]));
+    for (const r of ok) byId.set(r.id, { source:"recipes.json", ...r });
+    RECIPES = [...byId.values()];
+    recipesFromFile = ok.length;
+    renderRecipeBtn();
+  } catch { /* không có file hoặc file lỗi: dùng kiểu có sẵn */ }
+}
+const recipesFor = (scene) => RECIPES.filter(r => r.scene === scene);
+const recipeById = (id) => RECIPES.find(r => r.id === id);
+
+/* Chọn kiểu: người dùng chọn thì dùng luôn; để tự chọn thì lấy kiểu gần đạt nhất, có độ trễ để khỏi nhảy qua lại. */
+function pickRecipe(obs, motion, scene, mode) {
+  const sel = S.recipeSel && S.recipeSel[scene];
+  if (sel && recipeById(sel)) return { recipe:recipeById(sel), auto:false };
+  const list = recipesFor(scene).filter(r => r.auto !== false);
+  if (!list.length) return { recipe:null, auto:true };
+  if (list.length === 1) return { recipe:list[0], auto:true };
+  const scored = list.map(r => ({ r, s:evaluate(obs, motion, scene, mode, r).score }));
+  scored.sort((a, b) => b.s - a.s);
+  const curId = st.autoRecipe[scene];
+  const cur = scored.find(x => x.r.id === curId);
+  if (!cur) { st.autoRecipe[scene] = scored[0].r.id; return { recipe:scored[0].r, auto:true }; }
+  if (scored[0].r.id !== curId && scored[0].s >= cur.s + 10) {
+    st.switchVotes[scene] = (st.switchVotes[scene] || 0) + 1;
+    if (st.switchVotes[scene] >= 5) { st.autoRecipe[scene] = scored[0].r.id; st.switchVotes[scene] = 0; return { recipe:scored[0].r, auto:true }; }
+  } else st.switchVotes[scene] = 0;
+  return { recipe:cur.r, auto:true };
+}
+function bestRecipe(obs, motion, scene, mode) {
+  const sel = S.recipeSel && S.recipeSel[scene];
+  if (sel && recipeById(sel)) return recipeById(sel);
+  const list = recipesFor(scene).filter(r => r.auto !== false);
+  let best = null, bs = -1;
+  for (const r of list) { const sc = evaluate(obs, motion, scene, mode, r).score; if (sc > bs) { bs = sc; best = r; } }
+  return best;
+}
+
+/* =========================================================
+   4. Bộ não bố cục
    ========================================================= */
 const deg = (a) => `${Math.round(a)}°`;
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -667,15 +763,23 @@ const nearest = (vals, x) => vals.reduce((a, b) => Math.abs(b - x) < Math.abs(a 
 const placeName = (tx) => Math.abs(tx - 0.5) < 0.01 ? "giữa khung" : tx < 0.5 ? "đường lưới bên trái" : "đường lưới bên phải";
 const offset = (r, dx, dy) => ({ x:r.x + dx, y:r.y + dy, w:r.w, h:r.h });
 
-function evaluate(obs, motion, scene, mode) {
+function evaluate(obs, motion, scene, mode, recipe) {
+  recipe = recipe || recipesFor(scene)[0] || {};
   const g = { score:0, aligned:false, blocking:false, title:"", subtitle:null, tips:[], speech:null, icon:"check",
-              subject:null, anchor:null, target:null, targetRect:null, ground:false, tilt:null, camAngle:null, checks:[] };
+              subject:null, anchor:null, target:null, targetRect:null, ground:false, tilt:null, camAngle:null, camOk:null,
+              checks:[], recipe };
   const issues = [], checks = [];
   const subjectMode = scene === "person" && mode === "subject";
   const L = powerLines();
+  const R = recipe.subject || {};
+  const resolveX = (v, cur) => v === "center" ? 0.5 : typeof v === "number" ? v : v === "left-third" ? L[0] : v === "right-third" ? L[1] : nearest(L, cur);
+  const resolveY = (v, cur, anchorType) =>
+    v === "center" ? 0.5 : typeof v === "number" ? v :
+    v === "top-third" ? L[0] + (anchorType === "face" ? 0.04 : 0) :
+    v === "bottom-third" ? L[1] : v === "thirds" ? nearest(L, cur) : cur;
 
   // 1. cân bằng
-  if (motion && motion.ok) {
+  if (motion && motion.ok && recipe.level !== false) {
     const flat = motion.down < 35;
     if (!flat) {
       const roll = motion.roll;
@@ -696,62 +800,73 @@ function evaluate(obs, motion, scene, mode) {
   }
 
   // 2. chủ thể
-  let anchor = null, target = null, subj = null, ghost = null, place = "điểm mạnh của khung", weight = 1, size = null, noun;
+  let anchor = null, target = null, subj = null, ghost = null, place = "điểm mạnh của khung", size = null, noun;
+  const weight = recipe.weight ?? 1;
+  const sizeOf = (metric, face, body, rect) =>
+    metric === "face" ? (face ? face.w : null) : metric === "body" ? (body ? body.h : null) : metric === "area" ? (rect ? area(rect) : null) : null;
+  const judgeSize = (v) => {
+    const z = recipe.size; if (!z || v == null) return null;
+    if (z.min != null && v < z.min) return "small";
+    if (z.max != null && v > z.max) return "big";
+    return null;
+  };
   if (scene === "person") {
     noun = "người";
     const people = obs.people.slice().sort((a, b) => (b.face ? b.face.w : 0) - (a.face ? a.face.w : 0) || area(b.body) - area(a.body));
     const main = people[0];
-    if (main && main.face) {
-      const f = main.face;
-      const group = people.filter(p => p.face && p.face.w > f.w * 0.5).map(p => p.face);
-      const r = group.reduce((u, q) => { const x = Math.min(u.x, q.x), y = Math.min(u.y, q.y);
-        return { x, y, w:Math.max(u.x + u.w, q.x + q.w) - x, h:Math.max(u.y + u.h, q.y + q.h) - y }; }, f);
-      const a = { x:r.x + r.w / 2, y:r.y + r.h / 2 };
-      const close = f.w > 0.28;
-      const tx = (group.length >= 2 || close) ? 0.5 : nearest(L, a.x);
-      const ty = close ? 0.42 : L[0] + 0.04;
-      anchor = a; target = { x:tx, y:ty }; subj = r; place = placeName(tx);
-      ghost = offset(main.body, tx - a.x, ty - a.y);
-      if (f.w > 0.5) size = "big";
-      else if (f.w < 0.045 && main.body.h < 0.45) size = "small";
-      if (r.y < 0.015) issues.push({ p:20, t:"Ngẩng máy lên một chút", s:"Đầu đang sát mép trên khung", i:"tiltUp" });
-    } else if (main) {
-      const b = main.body, a = { x:b.x + b.w / 2, y:b.y + b.h * 0.12 };
-      const tx = nearest(L, a.x), ty = L[0];
-      anchor = a; target = { x:tx, y:ty }; subj = b; place = placeName(tx);
-      ghost = offset(b, tx - a.x, ty - a.y);
-    }
-  } else if (scene === "landscape") {
-    noun = "điểm nhấn"; weight = 0.5;
-    const s = salient(obs);
-    if (s && area(s) < 0.35) {
-      anchor = { x:s.x + s.w / 2, y:s.y + s.h / 2 }; subj = s;
-      target = { x:nearest(L, anchor.x), y:nearest(L, anchor.y) }; place = "giao điểm lưới gần nhất";
+    if (main) {
+      const f = main.face, body = main.body;
+      let anchorType = R.anchor || "face";
+      let a, rect, tx, ty;
+      if (anchorType === "face" && f) {
+        const group = people.filter(p => p.face && p.face.w > f.w * 0.5).map(p => p.face);
+        rect = group.reduce((u, q) => { const x = Math.min(u.x, q.x), y = Math.min(u.y, q.y);
+          return { x, y, w:Math.max(u.x + u.w, q.x + q.w) - x, h:Math.max(u.y + u.h, q.y + q.h) - y }; }, f);
+        a = { x:rect.x + rect.w / 2, y:rect.y + rect.h / 2 };
+        const close = f.w > 0.28;
+        if (recipe.groupCenter && (group.length >= 2 || close)) { tx = 0.5; ty = close ? 0.42 : resolveY(R.y, a.y, "face"); }
+      } else if (anchorType === "feet") {
+        rect = body; a = { x:body.x + body.w / 2, y:body.y + body.h };
+      } else if (anchorType === "center") {
+        rect = body; a = { x:body.x + body.w / 2, y:body.y + body.h / 2 };
+      } else {
+        // chưa thấy mặt: lấy vùng đầu từ khung người
+        anchorType = "head"; rect = body; a = { x:body.x + body.w / 2, y:body.y + body.h * 0.12 };
+      }
+      if (tx == null) tx = resolveX(R.x, a.x);
+      if (ty == null) ty = resolveY(R.y, a.y, anchorType === "head" ? "none" : anchorType);
+      anchor = a; target = { x:tx, y:ty }; subj = rect;
+      place = anchorType === "feet" ? "sát mép dưới khung" : placeName(tx);
+      ghost = offset(body, tx - a.x, ty - a.y);
+      size = judgeSize(sizeOf(recipe.size?.metric, f, body, rect));
+      if (body.y < 0.015 && anchorType !== "feet") issues.push({ p:20, t:"Ngẩng máy lên một chút", s:"Đầu đang sát mép trên khung", i:"tiltUp" });
     }
   } else {
-    noun = scene === "food" ? "món ăn" : "sản phẩm";
-    const s = salient(obs);
-    if (s) {
-      anchor = { x:s.x + s.w / 2, y:s.y + s.h / 2 }; subj = s; target = { x:0.5, y:0.5 }; place = "giữa khung";
-      const ar = area(s);
-      if (scene === "food") { if (ar < 0.12) size = "small"; else if (ar > 0.9) size = "big"; }
-      else { if (ar < 0.1) size = "small"; else if (ar > 0.75) size = "big"; }
-    }
-    if (scene === "food" && motion && motion.ok) {
-      const down = motion.down; g.camAngle = down;
-      if (down < 25) {
-        if (down > 6) issues.push({ p:Math.min(25, (down - 6) * 2.5), t:"Đưa máy thẳng trên món ăn", s:`Chụp từ trên xuống, đang lệch ${deg(down)}`, i:"angle" });
-        checks.push({ ok:down <= 8, t: down <= 8 ? "Góc từ trên xuống chuẩn" : `Góc từ trên xuống lệch ${deg(down)}` });
-      } else {
-        const diff = down - 45;
-        if (Math.abs(diff) > 12) issues.push({ p:Math.min(25, (Math.abs(diff) - 12) * 1.5),
-          t: diff > 0 ? "Chúc máy xuống thêm" : "Nghiêng máy ra một chút", s:"Góc chéo khoảng 45° giúp món ăn có chiều sâu", i:"angle" });
-        checks.push({ ok:Math.abs(diff) <= 15, t: Math.abs(diff) <= 15 ? "Góc chéo 45° đẹp" : "Góc chụp chưa đẹp, thử 45° hoặc từ trên xuống" });
-      }
+    noun = scene === "food" ? "món ăn" : scene === "landscape" ? "điểm nhấn" : "sản phẩm";
+    const s2 = salient(obs);
+    const maxA = recipe.maxSubjectArea ?? 1;
+    if (s2 && area(s2) < maxA) {
+      const a = { x:s2.x + s2.w / 2, y:s2.y + s2.h / 2 };
+      anchor = a; subj = s2;
+      target = { x:resolveX(R.x, a.x), y:resolveY(R.y, a.y, "center") };
+      place = Math.abs(target.x - 0.5) < 0.01 && Math.abs(target.y - 0.5) < 0.01 ? "giữa khung" : "giao điểm lưới gần nhất";
+      size = judgeSize(sizeOf(recipe.size?.metric, null, null, s2));
     }
   }
 
-  // 3. vị trí
+  // 3. góc máy (ngửa / chúc) theo kiểu chụp
+  const cam = recipe.camera;
+  if (cam && Array.isArray(cam.down) && motion && motion.ok) {
+    const [lo, hi] = cam.down, down = motion.down;
+    g.camAngle = down; g.camOk = down >= lo && down <= hi;
+    if (down > hi) issues.push({ p:Math.min(25, (down - hi) * 2), t:cam.lower || `Chúc máy xuống thêm khoảng ${deg(down - hi)}`,
+      s:`Góc máy đang ${deg(down)}, kiểu này cần ${lo}–${hi}°`, i:"tiltDown" });
+    else if (down < lo) issues.push({ p:Math.min(25, (lo - down) * 2), t:cam.raise || `Ngửa máy lên thêm khoảng ${deg(lo - down)}`,
+      s:`Góc máy đang ${deg(down)}, kiểu này cần ${lo}–${hi}°`, i:"tiltUp" });
+    checks.push({ ok:g.camOk, t: g.camOk ? `Góc máy chuẩn (${deg(down)})` : `Góc máy ${deg(down)}, kiểu này cần ${lo}–${hi}°` });
+  }
+
+  // 4. vị trí
   if (anchor && target) {
     const dx = target.x - anchor.x, dy = target.y - anchor.y, d = Math.hypot(dx, dy);
     const p = d < 0.03 ? 0 : Math.min(45, (d - 0.03) * 230) * weight;
@@ -772,32 +887,32 @@ function evaluate(obs, motion, scene, mode) {
       }
     }
     checks.push({ ok:d < 0.06, t: d < 0.06 ? `${cap(noun)} nằm ở ${place}` : `${cap(noun)} lệch khỏi ${place}` });
-  } else if (scene !== "landscape") {
+  } else if (recipe.requireSubject !== false) {
     const m = scene === "person" ? "Chưa thấy người trong khung" : "Chưa rõ chủ thể chính";
     issues.push({ p: scene === "person" ? 40 : 20, t:m, s: scene === "person" ? "Hướng máy về phía người cần chụp" : `Đưa ${noun} vào giữa khung`, i:"search" });
     checks.push({ ok:false, t:m });
     g.blocking = true;
   }
 
-  // 4. kích thước
+  // 5. kích thước
   if (size === "small") {
-    issues.push({ p:15, t:"Tiến lại gần hơn", s: scene === "person" ? "Hoặc zoom 2× cho chân dung" : `${cap(noun)} đang quá nhỏ trong khung`,
+    issues.push({ p:15, t:"Tiến lại gần hơn", s: recipe.size?.metric === "body" ? "Người nên cao gần hết khung hình" : scene === "person" ? "Hoặc zoom 2× cho chân dung" : `${cap(noun)} đang quá nhỏ trong khung`,
       i:"closer", sp: subjectMode ? "Bạn tiến lại gần máy một chút" : null });
     checks.push({ ok:false, t:`${cap(noun)} hơi nhỏ, lần sau tiến lại gần` });
   } else if (size === "big") {
     issues.push({ p:15, t:"Lùi ra một chút", s:"Khung hình đang cắt quá sát", i:"farther", sp: subjectMode ? "Bạn lùi ra sau một chút" : null });
     checks.push({ ok:false, t:"Khung hình quá chật" });
-  } else if (anchor) {
+  } else if (anchor && recipe.size) {
     checks.push({ ok:true, t:`Kích thước ${noun} vừa khung` });
   }
 
-  // 5. tổng hợp
-  const total = issues.reduce((s, i) => s + i.p, 0);
+  // 6. tổng hợp
+  const total = issues.reduce((sum, it) => sum + it.p, 0);
   g.score = Math.max(0, Math.min(100, Math.round(100 - total)));
   issues.sort((a, b) => b.p - a.p);
   if (issues[0]) { const t = issues[0]; g.title = t.t; g.subtitle = t.s; g.icon = t.i; g.speech = t.sp || null; }
   else { g.title = "Gần chuẩn rồi"; g.subtitle = "Giữ nguyên góc máy"; g.icon = "check"; }
-  g.tips = issues.slice(1, 3).map(i => i.t);
+  g.tips = issues.slice(1, 3).map(it => it.t);
   g.anchor = anchor; g.target = target; g.subject = subj;
   g.targetRect = ghost || (subj && anchor && target ? offset(subj, target.x - anchor.x, target.y - anchor.y) : null);
   g.ground = subjectMode;
@@ -855,8 +970,10 @@ function handle(obs) {
       g.subtitle = st.ai.status === "failed" ? "Kiểm tra mạng rồi mở lại app. Thước cân bằng vẫn dùng được." : "Lần đầu cần tải khoảng 10 MB, lần sau nhanh hơn";
     }
   } else {
-    const f = frameRect();
-    g = guidanceToView(evaluate(obsToFrame(obs, f), st.motion, activeScene(), st.mode), f);
+    const f = frameRect(), fobs = obsToFrame(obs, f), scene = activeScene();
+    const pick = pickRecipe(fobs, st.motion, scene, st.mode);
+    st.recipe = pick.recipe; st.recipeAuto = pick.auto;
+    g = guidanceToView(evaluate(fobs, st.motion, scene, st.mode, pick.recipe), f);
   }
 
   st.smoothed = st.smoothed === 0 ? g.score : st.smoothed * 0.7 + g.score * 0.3;
@@ -866,41 +983,18 @@ function handle(obs) {
   const prev = st.guidance || {};
   if (aligned) {
     g.title = "Chuẩn rồi, giữ yên tay";
-    g.subtitle = S.autoCapture ? "App sẽ tự chụp khi máy đứng yên" : "Chọn Camera gốc hoặc Chụp ngay";
+    const rc = g.recipe || {};
+    g.subtitle = rc.hint || "Chọn Camera gốc hoặc Chụp ngay";
     g.icon = "check"; g.tips = [];
-    g.speech = st.mode === "subject" ? "Tốt lắm, giữ nguyên nhé" : null;
+    g.speech = st.mode === "subject" ? (rc.pose || "Tốt lắm, giữ nguyên nhé") : null;
   } else if (!prev.aligned && prev.title && g.title !== prev.title) {
     // chỉ đổi câu khi câu mới ổn định ~0,5 giây
     if (st.pendingTitle !== g.title) { st.pendingTitle = g.title; st.pendingSince = now; }
     if (now - st.pendingSince < 500) Object.assign(g, { title:prev.title, subtitle:prev.subtitle, icon:prev.icon, tips:prev.tips, speech:prev.speech });
   }
   st.guidance = g;
-  trackAlignment(aligned, now);
+  renderRecipeBtn();
   if (S.voice) say(st.mode === "subject" ? (g.speech || g.title) : g.title);
-}
-
-function trackAlignment(aligned, now) {
-  if (!aligned) {
-    st.alignedSince = null; st.suppressed = false;
-    if (st.countdown != null) cancelCountdown();
-    return;
-  }
-  if (st.alignedSince == null || !st.motion.steady && st.motion.ok) st.alignedSince = now;
-  if (now - st.alignedSince < 1000) return;
-  if (S.autoCapture && st.countdown == null && !st.capturing && !st.suppressed) startCountdown();
-}
-
-function startCountdown() {
-  st.countdown = 2; renderControls();
-  st.cdTimer = setInterval(() => {
-    st.countdown -= 1;
-    if (st.countdown <= 0) { cancelCountdown(); capture(); } else renderControls();
-  }, 1000);
-}
-function cancelCountdown(byUser = false) {
-  clearInterval(st.cdTimer); st.cdTimer = null; st.countdown = null;
-  if (byUser) st.suppressed = true;
-  renderControls();
 }
 
 /* =========================================================
@@ -1005,7 +1099,7 @@ function draw() {
     ctx.fillText(deg(Math.abs(g.tilt)), cx, cy + 24);
   }
   if (g.camAngle != null) {
-    const ok = g.camAngle <= 8 || Math.abs(g.camAngle - 45) <= 12;
+    const ok = !!g.camOk;
     ctx.fillStyle = ok ? "#8EC9FF" : "#F2A93B"; ctx.font = "500 13px 'IBM Plex Mono', monospace"; ctx.textAlign = "center";
     ctx.fillText(`Góc máy ${deg(g.camAngle)}`, w / 2, fy + fh * 0.84 + (g.tilt != null ? 44 : 0));
   }
@@ -1051,10 +1145,9 @@ function render() {
 
 function renderControls() {
   const g = st.guidance;
-  const choice = st.running && st.coachOn && g && g.aligned && !S.autoCapture && st.countdown == null && !st.capturing;
+  const choice = st.running && st.coachOn && g && g.aligned && !st.capturing;
   $("choice").hidden = !choice;
   $("controls").hidden = choice;
-  $("shutterCore").textContent = st.countdown != null ? String(st.countdown) : "";
 }
 
 function renderChips() {
@@ -1066,8 +1159,51 @@ function renderChips() {
     b.appendChild(document.createTextNode(label));
     b.onclick = onClick; box.appendChild(b);
   };
-  mk(`Tự động: ${sceneTitle(st.detected)}`, st.sceneSel == null, () => { st.sceneSel = null; renderChips(); }, true);
-  for (const [k, t] of SCENES) mk(t, st.sceneSel === k, () => { st.sceneSel = k; renderChips(); }, false);
+  mk(`Tự động: ${sceneTitle(st.detected)}`, st.sceneSel == null, () => { st.sceneSel = null; renderChips(); renderRecipeBtn(); }, true);
+  for (const [k, t] of SCENES) mk(t, st.sceneSel === k, () => { st.sceneSel = k; renderChips(); renderRecipeBtn(); }, false);
+}
+
+let lastRecipeKey = "";
+function renderRecipeBtn() {
+  const b = $("recipeBtn");
+  const show = st.running && st.coachOn && st.ai.status === "ready";
+  b.hidden = !show;
+  if (!show) return;
+  const scene = activeScene();
+  const sel = S.recipeSel && S.recipeSel[scene];
+  const r = (sel && recipeById(sel)) || st.recipe || recipesFor(scene)[0];
+  const key = (r ? r.id : "") + "|" + !!sel + "|" + recipesFor(scene).length;
+  if (key === lastRecipeKey) return;
+  lastRecipeKey = key;
+  b.innerHTML = "";
+  b.appendChild(document.createTextNode("Kiểu: "));
+  const strong = document.createElement("b"); strong.textContent = r ? r.name : "—"; b.appendChild(strong);
+  if (!sel) b.appendChild(document.createTextNode(" · tự chọn"));
+  b.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+}
+function openRecipes() {
+  const scene = activeScene();
+  $("recipesTitle").textContent = "Kiểu chụp: " + sceneTitle(scene);
+  $("recipesNote").textContent = "Đổi loại ảnh (Người, Phong cảnh, Đồ ăn, Sản phẩm) bằng hàng chip trên khung ngắm.";
+  const box = $("rlist"); box.innerHTML = "";
+  const sel = (S.recipeSel && S.recipeSel[scene]) || null;
+  const item = (id, name, desc, src) => {
+    const b = document.createElement("button");
+    b.className = "ritem"; b.setAttribute("aria-pressed", String(sel === id));
+    b.innerHTML = '<span class="rdot"></span><div></div>';
+    const d = b.lastChild;
+    const t = document.createElement("b"); t.textContent = name; d.appendChild(t);
+    if (desc) { const p = document.createElement("span"); p.textContent = desc; d.appendChild(p); }
+    if (src) { const m = document.createElement("small"); m.textContent = "Nguồn: " + src; d.appendChild(m); }
+    b.onclick = () => {
+      S.recipeSel = { ...(S.recipeSel || {}), [scene]: id }; saveS();
+      st.smoothed = 0; lastRecipeKey = ""; renderRecipeBtn(); closeSheet("recipes");
+    };
+    box.appendChild(b);
+  };
+  item(null, "Tự chọn kiểu hợp nhất", "AI dẫn bạn theo kiểu cơ bản đang gần đạt nhất. Kiểu ghi “chọn tay” chỉ dùng khi bạn chọn.", "");
+  for (const r of recipesFor(scene)) item(r.id, r.name, r.howto, (r.source || "") + (r.auto === false ? " · chọn tay" : ""));
+  openSheet("recipes");
 }
 
 /* =========================================================
@@ -1075,7 +1211,7 @@ function renderChips() {
    ========================================================= */
 async function capture() {
   if (st.capturing || !st.running || !video.videoWidth) return;
-  cancelCountdown(); st.capturing = true; renderControls();
+  st.capturing = true; renderControls();
   const blink = $("blink"); blink.classList.add("on"); setTimeout(() => blink.classList.remove("on"), 120);
   try {
     const { crop } = videoMapper(), f = frameRect();
@@ -1112,8 +1248,9 @@ async function scoreImage(img, motion) {
   const map = makeMapper(W, H, W, H);
   const obs = buildObservation(m.pose.detect(img), m.obj.detect(img), m.cls.classify(img), map, W, H);
   const scene = st.sceneSel || (hasPerson(obs) ? "person" : obs.sceneGuess || "product");
-  const g = evaluate(obs, motion, scene, "camera");
-  return { score:g.score, checks:g.checks, scene };
+  const recipe = bestRecipe(obs, motion, scene, "camera");
+  const g = evaluate(obs, motion, scene, "camera", recipe);
+  return { score:g.score, checks:g.checks, scene, recipe };
 }
 
 let reviewBlob = null, reviewURL = null;
@@ -1122,7 +1259,6 @@ function openReview(blob, source, motion) {
   if (reviewURL) URL.revokeObjectURL(reviewURL);
   reviewURL = URL.createObjectURL(blob);
   $("reviewTitle").textContent = source === "camera" ? "Vừa chụp" : "Ảnh đã chọn";
-  $("banner").hidden = true;
   const img = $("reviewImg");
   $("reviewBody").innerHTML = `<p class="note" style="margin-top:16px">Đang chấm điểm bố cục…</p>`;
   const act = $("reviewActions"); act.innerHTML = "";
@@ -1133,7 +1269,7 @@ function openReview(blob, source, motion) {
   } else {
     btn("Quay lại canh góc", "primary light", closeReview);
   }
-  $("review").hidden = false; cancelCountdown();
+  $("review").hidden = false;
   img.onload = async () => {
     try {
       const r = await scoreImage(img, motion);
@@ -1143,7 +1279,7 @@ function openReview(blob, source, motion) {
       const esc = (s) => s.replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
       $("reviewBody").innerHTML = `
         <div class="verdict"><span class="big" style="color:${r.score >= 85 ? "var(--good)" : "var(--guide)"}">${r.score}</span>
-          <div><b>${verdict}</b><small>${esc(sceneTitle(r.scene))}, chấm ngay trên máy</small></div></div>
+          <div><b>${verdict}</b><small>${esc(sceneTitle(r.scene))}${r.recipe ? ", kiểu " + esc(r.recipe.name) : ""}, chấm ngay trên máy</small></div></div>
         <ul class="checks">${r.checks.map(c => `<li>${c.ok ? ok : bad}<span>${esc(c.t)}</span></li>`).join("")}</ul>
         ${motion ? "" : '<p class="note">Ảnh từ thư viện không có dữ liệu cảm biến nên không chấm độ nghiêng.</p>'}`;
     } catch (e) {
@@ -1154,7 +1290,7 @@ function openReview(blob, source, motion) {
 }
 function closeReview() {
   $("review").hidden = true;
-  st.sessionStart = performance.now(); st.smoothed = 0; st.guidance = scanningGuidance(); st.alignedSince = null;
+  st.sessionStart = performance.now(); st.smoothed = 0; st.guidance = scanningGuidance();
 }
 async function saveReview() {
   if (!reviewBlob) return;
@@ -1176,8 +1312,6 @@ function openNative() {
   runShortcut();
 }
 function runShortcut() {
-  cancelCountdown();
-  st.handoff = true;
   const a = document.createElement("a");
   a.href = "shortcuts://run-shortcut?name=" + encodeURIComponent(S.shortcutName);
   a.click();
@@ -1216,9 +1350,7 @@ function openSheet(id) {
 function closeSheet(id) { $(id).hidden = true; }
 
 function syncTopBar() {
-  $("frameBtn").textContent = S.frame;
-  const a = $("autoBtn"); a.classList.toggle("on", S.autoCapture); a.setAttribute("aria-pressed", String(S.autoCapture));
-  a.setAttribute("aria-label", S.autoCapture ? "Tự chụp đang bật" : "Tự chụp đang tắt");
+  $("frameBtn").textContent = "Khung " + S.frame;
   $("coachBtn").setAttribute("aria-pressed", String(st.coachOn));
   $("modeCam").setAttribute("aria-pressed", String(st.mode === "camera"));
   $("modeSubj").setAttribute("aria-pressed", String(st.mode === "subject"));
@@ -1237,13 +1369,15 @@ function syncSettingsUI() {
     ? `Luồng camera: ${vw}×${vh}` + (c ? `, phần có hình ${Math.round(c.w)}×${Math.round(c.h)} (đã tự bỏ viền đen)` : ", không có viền đen")
     : "";
   $("levelNote").textContent = LEVEL_NOTES[S.level];
-  $("optText").checked = S.text; $("optVoice").checked = S.voice; $("optAuto").checked = S.autoCapture;
+  $("optText").checked = S.text; $("optVoice").checked = S.voice;
+  $("recipeInfo").textContent = `Kiểu chụp đang có: ${RECIPES.length}` + (recipesFromFile ? ` (${recipesFromFile} từ file recipes.json)` : "");
   $("thrVal").textContent = S.threshold; $("optShortcut").value = S.shortcutName;
 }
 function setS(k, v) { S[k] = v; saveS(); syncSettingsUI(); syncTopBar(); lastCardKey = ""; }
 
-$("autoBtn").onclick = () => { setS("autoCapture", !S.autoCapture); if (!S.autoCapture) cancelCountdown(); toast(S.autoCapture ? "Tự chụp: bật. Đạt chuẩn là app tự chụp." : "Tự chụp: tắt"); };
-$("coachBtn").onclick = () => { st.coachOn = !st.coachOn; if (!st.coachOn) cancelCountdown(); syncTopBar(); };
+$("coachBtn").onclick = () => { st.coachOn = !st.coachOn; syncTopBar(); lastRecipeKey = ""; renderRecipeBtn(); };
+$("recipeBtn").onclick = openRecipes;
+$("recipesDone").onclick = () => closeSheet("recipes");
 $("settingsBtn").onclick = () => openSheet("settings");
 $("settingsDone").onclick = () => closeSheet("settings");
 $("levelSeg").onclick = (e) => { const v = e.target.closest("button")?.dataset.v; if (v) setS("level", v); };
@@ -1256,7 +1390,6 @@ $("frameBtn").onclick = () => {
 $("frameSeg").onclick = (e) => { const v = e.target.closest("button")?.dataset.v; if (v) { setS("frame", v); st.smoothed = 0; } };
 $("optText").onchange = (e) => setS("text", e.target.checked);
 $("optVoice").onchange = (e) => { setS("voice", e.target.checked); if (e.target.checked) say("Đã bật giọng nói", true); };
-$("optAuto").onchange = (e) => { setS("autoCapture", e.target.checked); if (!S.autoCapture) cancelCountdown(); };
 $("thrDown").onclick = () => setS("threshold", Math.max(75, S.threshold - 1));
 $("thrUp").onclick = () => setS("threshold", Math.min(98, S.threshold + 1));
 $("optShortcut").onchange = (e) => setS("shortcutName", e.target.value.trim() || "Coach Camera");
@@ -1272,52 +1405,66 @@ $("choiceNow").onclick = () => capture();
 $("nativeBtn").onclick = openNative;
 $("choiceCam").onclick = openNative;
 $("reviewDone").onclick = closeReview;
-$("bannerClose").onclick = () => { $("banner").hidden = true; };
 const onPick = (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) openReview(f, "library", null); };
 $("libInput").onchange = onPick;
-$("bannerInput").onchange = onPick;
-vf.addEventListener("click", (e) => {
-  if (e.target.closest("button")) return;
-  if (st.countdown != null) { cancelCountdown(true); toast("Đã hủy tự chụp"); }
-});
 
-$("startBtn").onclick = async () => {
+
+function markCamOK(v) { try { localStorage.setItem("coach.camOK", v ? "1" : "0"); } catch {} }
+async function begin(fromTap) {
   $("startErr").hidden = true;
-  enableMotion();                                  // phải gọi trong lúc người dùng bấm
+  if (fromTap) enableMotion();                     // xin quyền cảm biến phải nằm trong lúc chạm
+  else { listenMotion(); armMotionOnFirstTap(); }  // đã cho phép trước đó thì tự chạy, chưa thì chạm 1 lần là bật
   if ("speechSynthesis" in window) speechSynthesis.getVoices();
   try {
     await startCamera();
+    markCamOK(true);
     $("start").hidden = true;
     st.running = true; st.sessionStart = performance.now(); st.guidance = scanningGuidance();
     renderChips(); syncTopBar();
     loadAI();
     loop();
   } catch (e) {
+    $("start").hidden = false;
     const denied = e && (e.name === "NotAllowedError" || e.name === "SecurityError");
+    if (denied) markCamOK(false);
+    if (!fromTap) return;                          // tự mở không được thì chờ người dùng bấm, không báo lỗi
     $("startErr").textContent = denied
-      ? "Chưa có quyền camera. Vào Cài đặt → Safari → Camera → Cho phép, rồi bấm lại."
+      ? "Chưa có quyền camera. Vào Cài đặt → Ứng dụng → Safari → Camera → Cho phép, rồi bấm lại."
       : (e.message || "Không mở được camera.");
     $("startErr").hidden = false;
   }
-};
+}
+$("startBtn").onclick = () => begin(true);
+
+/* Đã cho phép camera từ lần trước: mở thẳng camera, không cần bấm "Bật camera". */
+async function autoStart() {
+  let allowed = false;
+  try { const p = await navigator.permissions?.query({ name:"camera" }); allowed = p?.state === "granted"; } catch {}
+  if (!allowed) { try { allowed = localStorage.getItem("coach.camOK") === "1"; } catch {} }
+  if (!allowed) return;
+  $("start").hidden = true;
+  await begin(false);
+}
 
 document.addEventListener("visibilitychange", async () => {
-  if (document.hidden) { cancelCountdown(); return; }
-  if (st.handoff) { st.handoff = false; $("banner").hidden = false; }
-  if (st.running && !cameraAlive()) {
-    try { await startCamera(); } catch { st.running = false; $("start").hidden = false; }
-  } else if (st.running) {
+  if (document.hidden || !st.running) return;
+  if (cameraAlive()) {
+    video.play().catch(() => {});                 // camera vẫn còn: chạy tiếp, không xin lại quyền
     scheduleContentCheck();
+  } else {
+    try { await startCamera(); } catch { st.running = false; $("start").hidden = false; }
   }
   st.sessionStart = performance.now(); st.smoothed = 0;
 });
 
 syncTopBar();
 renderControls();
+loadRecipes();
+autoStart();
 
 // Móc kiểm thử: chỉ bật khi mở trang với ?test
 if (new URLSearchParams(location.search).has("test")) {
-  window.__coach = { st, S, detectContent, layoutVideo, frameRect, setS, videoMapper, evaluate, handle, render, renderChips, buildObservation, makeMapper, personFromLandmarks, onOrientation, capture, openReview };
+  window.__coach = { st, S, RECIPES:()=>RECIPES, pickRecipe, detectContent, layoutVideo, frameRect, setS, videoMapper, evaluate, handle, render, renderChips, buildObservation, makeMapper, personFromLandmarks, onOrientation, capture, openReview };
 }
 </script>
 </body>
