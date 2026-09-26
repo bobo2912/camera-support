@@ -90,6 +90,12 @@ Thước cân bằng dùng cảm biến nghiêng. Nếu iOS cần hỏi lại qu
 
 Sửa `recipes.json` trên GitHub, chờ 1–2 phút, tắt hẳn app rồi mở lại. Cài đặt → cuối trang ghi số kiểu chụp đang có.
 
+## Cập nhật phiên bản mới
+
+App tự kiểm tra file `version.json` trên GitHub mỗi lần mở, mỗi khi quay lại app và 10 phút một lần. Khi có bản mới, trên cùng màn hình hiện nút **"Cập nhật 1.x"**. Bấm vào là app tải bản mới và mở lại. Trong Cài đặt có nút **Kiểm tra cập nhật**.
+
+Khi phát hành bản mới, luôn tải lên **cả hai**: `index.html` (trong đó có `APP_VERSION`) và `version.json` (cùng số phiên bản). Nếu chỉ tải `version.json` mà quên `index.html`, nút Cập nhật sẽ hiện mãi.
+
 ## Sửa app sau này
 
 Sửa file trên GitHub (bấm vào file → biểu tượng bút chì → Commit). Khoảng 1 phút sau GitHub Pages cập nhật. Trên iPhone, tắt hẳn app rồi mở lại để nhận bản mới.

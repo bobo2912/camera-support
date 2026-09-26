@@ -44,6 +44,10 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .pill svg{width:16px;height:16px}
 .pill.on{background:var(--good);border-color:var(--good);color:var(--bg)}
 .coach-pill{font-size:14px;color:var(--guide);border-color:var(--guide)}
+.update-pill{height:36px;padding:0 12px;border-radius:18px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+  background:var(--good);color:var(--bg);white-space:nowrap}
+.update-pill svg{width:16px;height:16px}
+.update-pill[aria-busy="true"]{opacity:.7}
 .coach-pill .dot{width:8px;height:8px;border-radius:4px;background:currentColor}
 .coach-pill.ok{color:var(--good);border-color:var(--good)}
 .coach-pill.off{color:var(--muted);border-color:var(--line)}
@@ -182,6 +186,10 @@ button{cursor:pointer;border:0;background:none;padding:0}
 <div class="app" id="app">
   <div class="top">
     <button class="pill coach-pill hit" id="coachBtn" aria-pressed="true"><span class="dot"></span>AI Coach</button>
+    <button class="update-pill hit" id="updateBtn" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>
+      <span id="updateLabel">Cập nhật</span>
+    </button>
     <button class="round" id="settingsBtn" aria-label="Cài đặt">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
     </button>
@@ -298,7 +306,12 @@ button{cursor:pointer;border:0;background:none;padding:0}
 
   <p class="note" id="camInfo" style="margin-top:22px"></p>
   <p class="note" id="recipeInfo"></p>
-  <p class="note">Phiên bản 1.3</p>
+  <div class="group">Phiên bản</div>
+  <div class="box">
+    <div class="row"><span style="font-size:15px">Đang dùng <span class="num" id="verNow"></span></span>
+      <button class="secondary" id="checkUpdateBtn" style="height:40px;font-size:14px">Kiểm tra cập nhật</button></div>
+  </div>
+  <p class="note" id="verNote"></p>
   <p class="note">Mọi phân tích chạy ngay trên điện thoại. Ảnh không được gửi lên máy chủ, app không dùng API key nào.</p>
 </section>
 
@@ -354,6 +367,7 @@ const MODELS = {
   classify: "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
 };
 
+const APP_VERSION = "1.4";
 const $ = (id) => document.getElementById(id);
 const video = $("video"), canvas = $("ov"), vf = $("vf");
 const ctx = canvas.getContext("2d");
@@ -1496,6 +1510,50 @@ function runShortcut() {
 }
 
 /* =========================================================
+   8b. Cập nhật phiên bản
+   version.json trên GitHub ghi số phiên bản mới nhất. App so với APP_VERSION,
+   có bản mới thì hiện nút "Cập nhật". Bấm vào: tải lại file mới bỏ qua bộ nhớ đệm rồi mở lại app.
+   ========================================================= */
+const verNewer = (a, b) => {
+  const pa = String(a).split(".").map(Number), pb = String(b).split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) { const x = pa[i] || 0, y = pb[i] || 0; if (x !== y) return x > y; }
+  return false;
+};
+let latest = null, lastCheck = 0;
+async function checkUpdate(manual = false) {
+  if (!manual && Date.now() - lastCheck < 60 * 1000) return;
+  lastCheck = Date.now();
+  if (manual) $("verNote").textContent = "Đang kiểm tra…";
+  try {
+    const res = await fetch("version.json?t=" + Date.now(), { cache:"no-store" });
+    if (!res.ok) throw new Error(res.status);
+    const info = await res.json();
+    if (info && info.version && verNewer(info.version, APP_VERSION)) {
+      latest = info;
+      $("updateLabel").textContent = "Cập nhật " + info.version;
+      $("updateBtn").hidden = false;
+      $("verNote").textContent = `Có phiên bản ${info.version}` + (info.notes ? `: ${info.notes}` : "") + ". Bấm nút Cập nhật ở trên cùng.";
+      if (manual) closeSheet("settings");
+    } else {
+      $("updateBtn").hidden = true;
+      if (manual) $("verNote").textContent = "Bạn đang dùng bản mới nhất.";
+    }
+  } catch {
+    if (manual) $("verNote").textContent = "Không kiểm tra được. Kiểm tra mạng rồi thử lại.";
+  }
+}
+async function applyUpdate() {
+  const b = $("updateBtn"); b.setAttribute("aria-busy", "true"); $("updateLabel").textContent = "Đang cập nhật…";
+  // làm mới bộ nhớ đệm của các file chính, rồi mở lại app
+  const files = ["./", "index.html", "recipes.json", "manifest.webmanifest"];
+  await Promise.allSettled(files.map(u => fetch(u, { cache:"reload" })));
+  const v = latest ? latest.version : Date.now();
+  const url = new URL(location.href);
+  url.searchParams.set("v", v);
+  location.replace(url.toString());
+}
+
+/* =========================================================
    9. Giọng nói
    ========================================================= */
 let lastSaid = "", lastSaidAt = 0;
@@ -1555,6 +1613,8 @@ function setS(k, v) { S[k] = v; saveS(); syncSettingsUI(); syncTopBar(); lastCar
 
 $("coachBtn").onclick = () => { st.coachOn = !st.coachOn; syncTopBar(); lastRecipeKey = ""; renderRecipeBtn(); };
 $("recipeBtn").onclick = openRecipes;
+$("updateBtn").onclick = applyUpdate;
+$("checkUpdateBtn").onclick = () => checkUpdate(true);
 $("recipesDone").onclick = () => closeSheet("recipes");
 $("settingsBtn").onclick = () => openSheet("settings");
 $("settingsDone").onclick = () => closeSheet("settings");
@@ -1625,6 +1685,7 @@ async function autoStart() {
 }
 
 document.addEventListener("visibilitychange", async () => {
+  if (!document.hidden) checkUpdate();
   if (document.hidden || !st.running) return;
   if (cameraAlive()) {
     video.play().catch(() => {});                 // camera vẫn còn: chạy tiếp, không xin lại quyền
@@ -1639,6 +1700,9 @@ syncTopBar();
 renderControls();
 loadRecipes();
 autoStart();
+$("verNow").textContent = APP_VERSION;
+checkUpdate();
+setInterval(() => { if (!document.hidden) checkUpdate(); }, 10 * 60 * 1000);
 
 // Móc kiểm thử: chỉ bật khi mở trang với ?test
 if (new URLSearchParams(location.search).has("test")) {
