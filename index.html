@@ -57,8 +57,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 /* viewfinder */
 .vf{position:relative;flex:none;margin:0 auto;overflow:hidden;background:#000;
   width:min(100vw, calc((100dvh - var(--sat) - var(--sab) - 240px) * .75));aspect-ratio:3/4}
-.vf video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
-.vf video.laid{object-fit:fill}
+.vf video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 50%}
 .vf canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .blink{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .12s}
 .blink.on{opacity:.7;transition:none}
@@ -95,9 +94,9 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .zoom{margin-top:auto;align-self:center;display:flex;gap:8px}
 .zoom button{min-width:36px;height:36px;padding:0 6px;border-radius:18px;background:rgba(13,14,12,.66);font-size:12px;font-weight:600}
 .zoom button[aria-pressed="true"]{color:var(--guide);background:rgba(13,14,12,.86)}
-.bottomrow{margin-top:auto;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;position:relative}
+.bottomrow{margin-top:auto;min-height:44px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:nowrap}
 .bottomrow .zoom{margin-top:0}
-.framebtn{position:absolute;left:0;height:36px;padding:0 12px;border-radius:18px;background:rgba(13,14,12,.8);
+.framebtn{flex:none;height:36px;min-width:52px;padding:0 10px;border-radius:18px;background:rgba(13,14,12,.8);
   font-family:var(--mono);font-size:12px;border:1px solid rgba(242,239,230,.35)}
 
 .paused{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
@@ -136,7 +135,10 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .choice b{font-size:16px}
 .choice small{font-size:11.5px;opacity:.85}
 .choice svg{width:26px;height:26px}
-.scoreline{flex:none;text-align:center;font-size:13px;color:var(--muted);padding:2px 12px 8px;min-height:26px}
+.scoreline{flex:none;display:flex;justify-content:center;align-items:baseline;gap:12px;font-size:13px;color:var(--muted);padding:2px 12px 8px;min-height:26px}
+.perf{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.perf.warn{color:var(--guide)}
+.perf.hot{color:#FF8A7A}
 
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(var(--sab) + 120px);transform:translateX(-50%);z-index:40;max-width:88vw;
@@ -219,7 +221,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
       <div class="chips" id="chips"></div>
       <button class="recipe-pill" id="recipeBtn" aria-label="Chọn kiểu chụp"></button>
       <div class="bottomrow">
-        <button class="framebtn hit" id="frameBtn" aria-label="Đổi khung ảnh cho khớp Camera gốc">Khung 4:3</button>
+        <button class="framebtn hit" id="frameBtn" aria-label="Đổi khung ảnh cho khớp Camera gốc">4:3</button>
         <div class="zoom" id="zoom"></div>
       </div>
     </div>
@@ -270,7 +272,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
       <b>Chụp ngay</b><small>trong app, giữ đúng góc</small>
     </button>
   </div>
-  <div class="scoreline" id="scoreline"></div>
+  <div class="scoreline"><span id="scoreline"></span><span class="perf" id="perf" hidden></span></div>
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
@@ -294,6 +296,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
   <div class="box">
     <div class="row"><label for="optSaver">Tiết kiệm pin</label><input type="checkbox" class="switch" id="optSaver"></div>
     <div class="row"><label for="optAutoPause">Tự tạm dừng khi không dùng</label><input type="checkbox" class="switch" id="optAutoPause"></div>
+    <div class="row"><label for="optPerf">Hiện số đo tải AI trên màn hình</label><input type="checkbox" class="switch" id="optPerf"></div>
   </div>
   <p class="note">Tiết kiệm pin: hình xem trước nhỏ hơn và AI phân tích thưa hơn, máy mát hơn nhưng chỉ dẫn phản hồi chậm hơn một chút. Tự tạm dừng: máy nằm yên 30 giây, hoặc 3 phút không chạm, thì app nghỉ camera và AI.</p>
   <p class="note" id="perfInfo"></p>
@@ -385,14 +388,14 @@ const MODELS = {
   classify: "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
 };
 
-const APP_VERSION = "1.5";
+const APP_VERSION = "1.6";
 const $ = (id) => document.getElementById(id);
 const video = $("video"), canvas = $("ov"), vf = $("vf");
 const ctx = canvas.getContext("2d");
 
 /* ---------------- settings ---------------- */
 const S = (() => {
-  const d = { recipeSel:{}, saver:false, autoPause:true, threshold:90, voice:false, text:true, level:"balanced", grid:"thirds",
+  const d = { recipeSel:{}, saver:false, autoPause:true, showPerf:true, threshold:90, voice:false, text:true, level:"balanced", grid:"thirds",
               shortcutName:"Coach Camera", shortcutReady:false, frame:"4:3" };
   try { return Object.assign(d, JSON.parse(localStorage.getItem("coach.settings") || "{}")); } catch { return d; }
 })();
@@ -504,27 +507,44 @@ async function startCamera() {
   });
   video.srcObject = st.stream;
   await video.play().catch(() => {});
-  st.content = null;
+  st.content = null; st.layout = null;
+  video.style.transform = "";
+  if (!video.videoWidth) await new Promise(r => { video.addEventListener("loadedmetadata", r, { once:true }); setTimeout(r, 1500); });
   layoutVideo();
   setupZoom();
   scheduleContentCheck();
 }
 
 /* Đặt video sao cho phần có hình thật phủ kín khung ngắm (kể cả khi Safari trả về luồng có viền đen). */
+/* Video luôn giữ đúng tỉ lệ (object-fit: cover nên không bao giờ bị bóp dẹt).
+   Nếu luồng camera có viền đen, chỉ phóng to bằng transform để viền đen ra ngoài khung. */
 function layoutVideo() {
   const vw = video.videoWidth, vh = video.videoHeight;
   if (!vw || !vh) return;
   const W = vf.clientWidth, H = vf.clientHeight;
-  const c = st.content || { x:0, y:0, w:vw, h:vh };
-  const s = Math.max(W / c.w, H / c.h);
-  const left = (W - c.w * s) / 2 - c.x * s, top = (H - c.h * s) / 2 - c.y * s;
-  video.classList.add("laid");
-  video.style.left = left + "px"; video.style.top = top + "px";
-  video.style.width = vw * s + "px"; video.style.height = vh * s + "px";
-  st.layout = { s, left, top, W, H, vw, vh };
+  if (!W || !H) return;
+  const s0 = Math.max(W / vw, H / vh);                 // phép "cover" của trình duyệt
+  const ox0 = (W - vw * s0) / 2, oy0 = (H - vh * s0) / 2;
+  const cx = W / 2, cy = H / 2;
+  let k = 1, tx = 0, ty = 0;
+  const c = st.content;
+  if (c && c.vw === vw && c.vh === vh) {
+    k = Math.max(1, W / (c.w * s0), H / (c.h * s0));
+    const px = ox0 + (c.x + c.w / 2) * s0, py = oy0 + (c.y + c.h / 2) * s0;   // tâm phần có hình trên màn hình
+    tx = -k * (px - cx); ty = -k * (py - cy);
+    // không kéo lệch quá mức làm lộ mép
+    const maxX = (k * vw * s0 - W) / 2, maxY = (k * vh * s0 - H) / 2;
+    tx = Math.max(-maxX, Math.min(maxX, tx)); ty = Math.max(-maxY, Math.min(maxY, ty));
+  }
+  video.style.transform = k === 1 && !tx && !ty ? "" : `translate(${tx}px, ${ty}px) scale(${k})`;
+  const s = s0 * k;
+  st.layout = { s, left:cx + k * (ox0 - cx) + tx, top:cy + k * (oy0 - cy) + ty, W, H, vw, vh };
 }
 function videoMapper() {
-  if (!st.layout || st.layout.vw !== video.videoWidth || st.layout.vh !== video.videoHeight || st.layout.W !== vf.clientWidth) layoutVideo();
+  if (!st.layout || st.layout.vw !== video.videoWidth || st.layout.vh !== video.videoHeight || st.layout.W !== vf.clientWidth || st.layout.H !== vf.clientHeight) {
+    if (st.layout && (st.layout.vw !== video.videoWidth || st.layout.vh !== video.videoHeight)) st.content = null;
+    layoutVideo();
+  }
   const L = st.layout;
   const pt = (x, y) => ({ x:(L.left + x * L.vw * L.s) / L.W, y:(L.top + y * L.vh * L.s) / L.H });
   const rect = (x, y, w, h) => { const a = pt(x, y), b = pt(x + w, y + h); return { x:a.x, y:a.y, w:b.x - a.x, h:b.y - a.y }; };
@@ -555,7 +575,7 @@ function detectContent() {
   const symmetric = Math.abs(lb - rb) <= 3 && Math.abs(tb - bb) <= 3;
   const significant = lb + rb > W * 0.04 || tb + bb > H * 0.04;
   const next = symmetric && significant
-    ? { x:l / W * vw, y:t / H * vh, w:(r - l + 1) / W * vw, h:(b - t + 1) / H * vh }
+    ? { x:l / W * vw, y:t / H * vh, w:(r - l + 1) / W * vw, h:(b - t + 1) / H * vh, vw, vh }
     : null;
   const changed = JSON.stringify(next) !== JSON.stringify(st.content);
   st.content = next;
@@ -569,6 +589,7 @@ function scheduleContentCheck() {
 video.addEventListener("loadedmetadata", layoutVideo);
 video.addEventListener("resize", () => { st.content = null; layoutVideo(); scheduleContentCheck(); });
 window.addEventListener("resize", layoutVideo);
+if ("ResizeObserver" in window) new ResizeObserver(() => layoutVideo()).observe(vf);
 function stopCamera() {
   if (st.stream) st.stream.getTracks().forEach(t => t.stop());
   st.stream = null;
@@ -614,10 +635,11 @@ async function loadAI() {
       }
     };
     st.ai.make = make;
-    st.ai.pose = await make(vision.PoseLandmarker, MODELS.pose, { numPoses:3, minPoseDetectionConfidence:0.5 });
+    st.ai.pose = await make(vision.PoseLandmarker, MODELS.pose, { numPoses:2, minPoseDetectionConfidence:0.5 });
     st.ai.status = "ready";   // đủ để hướng dẫn chụp người; phần còn lại tải tiếp
     st.ai.obj = await make(vision.ObjectDetector, MODELS.object, { maxResults:5, scoreThreshold:0.35 });
-    st.ai.cls = await make(vision.ImageClassifier, MODELS.classify, { maxResults:5 });
+    st.ai.cls = await vision.ImageClassifier.createFromOptions(fileset, {
+      baseOptions:{ modelAssetPath:MODELS.classify, delegate:"CPU" }, runningMode:"VIDEO", maxResults:5 });
   } catch (err) {
     console.warn("AI load failed", err);
     if (st.ai.status !== "ready") st.ai.status = "failed";
@@ -1230,9 +1252,10 @@ function tick(now) {
   maybeAutoPause(now);
   if (st.paused) return;
   if (st.coachOn && !sheetOpen()) {
+    st.runTimes = (st.runTimes || []).filter(t => now - t < 3000); st.runTimes.push(now);
     let obs = { people:[], objects:[] };
     try { if (st.ai.status === "ready") obs = analyzeFrame(now); } catch (e) { console.warn(e); }
-    if (now - (st.lastCtxRun || 0) > (S.saver ? 1600 : 800)) {
+    if (now - (st.lastCtxRun || 0) > (S.saver ? 1200 : 600)) {
       st.lastCtxRun = now;
       try {
         const { crop } = videoMapper(), f = frameRect();
@@ -1267,14 +1290,22 @@ async function resumeApp() {
 }
 
 function sizeCanvas() {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = vf.clientWidth, h = vf.clientHeight;
   if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return { w, h };
 }
 
+let lastDrawKey = "";
 function draw() {
+  const g0 = st.guidance;
+  const key = [vf.clientWidth, vf.clientHeight, S.frame, S.grid, st.coachOn, st.scanning, st.running,
+    g0 && g0.score, g0 && g0.aligned, g0 && Math.round((g0.tilt || 0) * 2), g0 && g0.subject && Math.round(g0.subject.x * 200) + ":" + Math.round(g0.subject.y * 200),
+    g0 && g0.target && Math.round(g0.target.x * 200), g0 && g0.horizonY && Math.round(g0.horizonY * 100), g0 && g0.camAngle && Math.round(g0.camAngle),
+    st.scanning && st.obs ? st.obs.people.length + ":" + st.obs.objects.length : ""].join("|");
+  if (key === lastDrawKey) return;
+  lastDrawKey = key;
   const { w, h } = sizeCanvas();
   ctx.clearRect(0, 0, w, h);
   const f = frameRect(), fx = f.x * w, fy = f.y * h, fw = f.w * w, fh = f.h * h;
@@ -1366,7 +1397,7 @@ function draw() {
   }
 }
 
-let lastCardKey = "";
+let lastCardKey = "", lastRingKey = "";
 function render() {
   draw();
   const g = st.guidance;
@@ -1392,16 +1423,37 @@ function render() {
   // vòng điểm
   const aiReady = st.ai.status === "ready";
   const score = st.coachOn && aiReady && g && !g.scanning ? g.score : 0;
-  $("ring").setAttribute("stroke-dasharray", `${(score / 100 * 251.3).toFixed(1)} 252`);
-  $("ring").setAttribute("stroke", g && g.aligned ? "#8EC9FF" : "#F2A93B");
-  $("ring").setAttribute("opacity", score > 0 ? "1" : "0");
+  const ringKey = score + "|" + !!(g && g.aligned);
+  if (ringKey !== lastRingKey) {
+    lastRingKey = ringKey;
+    $("ring").setAttribute("stroke-dasharray", `${(score / 100 * 251.3).toFixed(1)} 252`);
+    $("ring").setAttribute("stroke", g && g.aligned ? "#8EC9FF" : "#F2A93B");
+    $("ring").setAttribute("opacity", score > 0 ? "1" : "0");
+  }
   renderControls();
-  const sl = $("scoreline");
-  if (!st.running) sl.textContent = "";
-  else if (!st.coachOn) sl.textContent = "AI Coach đang tắt";
-  else if (!g || g.scanning) sl.textContent = "Nút chụp dùng được ngay, AI không chặn khoảnh khắc";
-  else if (!aiReady) sl.textContent = st.ai.status === "failed" ? "AI chưa tải được, chỉ còn thước cân bằng" : "Đang tải AI, vẫn chụp được bình thường";
-  else sl.innerHTML = `Bố cục <span class="num" style="color:${g.aligned ? "var(--good)" : "var(--guide)"}">${g.score}</span> / 100`;
+  let html;
+  if (!st.running) html = "";
+  else if (!st.coachOn) html = "AI Coach đang tắt";
+  else if (!g || g.scanning) html = "Nút chụp dùng được ngay";
+  else if (!aiReady) html = st.ai.status === "failed" ? "Chưa tải được AI" : "Đang tải AI…";
+  else html = `Bố cục <span class="num" style="color:${g.aligned ? "var(--good)" : "var(--guide)"}">${g.score}</span> / 100`;
+  if (html !== lastScoreHTML) { lastScoreHTML = html; $("scoreline").innerHTML = html; }
+  renderPerf();
+}
+let lastScoreHTML = "", lastPerf = "";
+function renderPerf() {
+  const el = $("perf");
+  const show = S.showPerf && st.running && st.coachOn && st.costEMA;
+  el.hidden = !show;
+  if (!show) return;
+  const now = performance.now();
+  const runs = (st.runTimes || []).filter(t => now - t < 3000);
+  const rate = runs.length > 1 ? (runs.length - 1) / ((runs[runs.length - 1] - runs[0]) / 1000) : 0;
+  const ms = Math.round(st.costEMA);
+  const txt = `AI ${ms} ms · ${rate.toFixed(1)}/s`;
+  const cls = "perf" + (ms > 80 ? " hot" : ms > 40 ? " warn" : "");
+  if (txt + cls !== lastPerf) { lastPerf = txt + cls; el.textContent = txt; el.className = cls;
+    el.title = ms > 80 ? "Máy đang xử lý chậm: bật Tiết kiệm pin trong Cài đặt" : "Thời gian AI phân tích mỗi khung hình và số lần mỗi giây"; }
 }
 
 function renderControls() {
@@ -1658,7 +1710,7 @@ function openSheet(id) {
 function closeSheet(id) { $(id).hidden = true; }
 
 function syncTopBar() {
-  $("frameBtn").textContent = "Khung " + S.frame;
+  $("frameBtn").textContent = S.frame;
   $("coachBtn").setAttribute("aria-pressed", String(st.coachOn));
   $("modeCam").setAttribute("aria-pressed", String(st.mode === "camera"));
   $("modeSubj").setAttribute("aria-pressed", String(st.mode === "subject"));
@@ -1678,7 +1730,7 @@ function syncSettingsUI() {
     : "";
   $("levelNote").textContent = LEVEL_NOTES[S.level];
   $("optText").checked = S.text; $("optVoice").checked = S.voice;
-  $("optSaver").checked = S.saver; $("optAutoPause").checked = S.autoPause;
+  $("optSaver").checked = S.saver; $("optAutoPause").checked = S.autoPause; $("optPerf").checked = S.showPerf;
   const rate = st.costEMA ? Math.min(1000 / nextInterval(), 10) : 0;
   $("perfInfo").textContent = st.costEMA ? `Hiện tại: AI mất khoảng ${Math.round(st.costEMA)} ms mỗi lần, chạy khoảng ${rate.toFixed(1)} lần mỗi giây.` : "";
   $("recipeInfo").textContent = `Kiểu chụp đang có: ${RECIPES.length}` + (recipesFromFile ? ` (${recipesFromFile} từ file recipes.json)` : "");
@@ -1707,6 +1759,7 @@ $("optSaver").onchange = async (e) => {
   if (st.running && !st.paused) { try { await startCamera(); } catch {} }   // đổi độ phân giải xem trước
 };
 $("optAutoPause").onchange = (e) => setS("autoPause", e.target.checked);
+$("optPerf").onchange = (e) => setS("showPerf", e.target.checked);
 $("optVoice").onchange = (e) => { setS("voice", e.target.checked); if (e.target.checked) say("Đã bật giọng nói", true); };
 $("thrDown").onclick = () => setS("threshold", Math.max(75, S.threshold - 1));
 $("thrUp").onclick = () => setS("threshold", Math.min(98, S.threshold + 1));

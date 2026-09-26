@@ -1,4 +1,4 @@
 {
-  "version": "1.5",
-  "notes": "Giảm nóng máy: AI chạy thưa hơn, tự tạm dừng khi không dùng, thêm chế độ Tiết kiệm pin"
+  "version": "1.6",
+  "notes": "Hiện số đo tải AI trên màn hình, sửa hình bị bóp dẹt, gọn nút khung ảnh, tối ưu thêm hiệu năng"
 }
