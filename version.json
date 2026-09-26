@@ -1,4 +1,4 @@
 {
-  "version": "1.7",
-  "notes": "Giao diện mới gọn và đẹp hơn, tiết kiệm pin hơn"
+  "version": "1.7.1",
+  "notes": "Sửa thanh trên cùng bị che bởi thanh trạng thái khi mở từ màn hình chính"
 }
