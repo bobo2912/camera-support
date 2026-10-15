@@ -62,10 +62,32 @@ button{cursor:pointer;border:0;background:none;padding:0}
 
 /* ---------- viewfinder ---------- */
 .vf{position:relative;flex:none;margin:0 auto;overflow:hidden;background:#000;border-radius:22px;
-  width:min(calc(100vw - 16px), calc((100dvh - var(--sat) - var(--sab) - 244px) * .75));aspect-ratio:3/4;
+  width:min(calc(100vw - 16px), calc((100dvh - var(--sat) - var(--sab) - 318px) * .75));aspect-ratio:3/4;
   box-shadow:0 0 0 1px var(--line)}
 .vf video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 50%}
 .vf canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.vf .eximg{position:absolute;object-fit:cover;pointer-events:none;transition:opacity .15s}
+
+/* ---------- khung mẫu + ảnh mẫu ---------- */
+.tpls{flex:none;display:flex;gap:8px;overflow-x:auto;padding:10px 12px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.tpls::-webkit-scrollbar{display:none}
+.tpl{flex:none;width:62px;display:flex;flex-direction:column;align-items:center;gap:4px;scroll-snap-align:start;position:relative}
+.tpl .tile{width:52px;height:52px;border-radius:13px;background:var(--surface);display:grid;place-items:center;overflow:hidden;position:relative;
+  box-shadow:inset 0 0 0 1.5px transparent;color:var(--muted)}
+.tpl .tile svg{width:30px;height:40px}
+.tpl .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tpl small{font-size:10.5px;color:var(--muted);white-space:nowrap;max-width:64px;overflow:hidden;text-overflow:ellipsis}
+.tpl[aria-pressed="true"] .tile{box-shadow:inset 0 0 0 2px var(--guide);color:var(--text)}
+.tpl[aria-pressed="true"] small{color:var(--text);font-weight:600}
+.tpl input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.tpls .sep{flex:none;width:1px;height:40px;margin:6px 2px 0;background:var(--line2)}
+.expill{align-self:center;margin-top:auto;display:flex;align-items:center;gap:2px;padding:3px;border-radius:20px;background:var(--glass);font-size:12.5px}
+.expill:not([hidden]) + .lens{margin-top:6px}
+.expill button{height:32px;min-width:32px;padding:0 8px;border-radius:16px;display:grid;place-items:center;font-size:16px}
+.expill .lbl{display:flex;align-items:center;gap:6px;padding:0 6px 0 10px;font-weight:600}
+.expill .lbl svg{width:14px;height:14px}
+.expill .div{width:1px;height:18px;background:var(--line2);margin:0 4px}
+.expill .pct{min-width:40px;text-align:center}
 .blink{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .12s}
 .blink.on{opacity:.7;transition:none}
 .hud{position:absolute;inset:0;padding:10px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
@@ -115,7 +137,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .secondary{height:48px;border-radius:24px;background:var(--surface2);color:var(--text);font-weight:600;font-size:15px;padding:0 20px}
 
 /* ---------- mode + controls ---------- */
-.modes{flex:none;align-self:center;display:flex;gap:2px;padding:3px;margin-top:12px;border-radius:20px;background:var(--surface)}
+.modes{flex:none;align-self:center;display:flex;gap:2px;padding:3px;margin-top:8px;border-radius:20px;background:var(--surface)}
 .modes button{height:34px;padding:0 14px;border-radius:17px;font-size:13px;font-weight:600;color:var(--muted)}
 .modes button[aria-pressed="true"]{background:var(--surface2);color:var(--text)}
 .controls{flex:1;min-height:96px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 28px}
@@ -239,6 +261,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 
   <div class="vf" id="vf">
     <video id="video" playsinline muted autoplay></video>
+    <img class="eximg" id="exImg" alt="" hidden>
     <canvas id="ov"></canvas>
     <div class="blink" id="blink"></div>
     <div class="hud" id="hud" hidden>
@@ -251,6 +274,14 @@ button{cursor:pointer;border:0;background:none;padding:0}
         </div>
       </div>
       <button class="ctx-pill" id="recipeBtn" aria-label="Chọn loại ảnh và kiểu chụp"></button>
+      <div class="expill" id="exPill" hidden>
+        <span class="lbl">Ảnh mẫu</span>
+        <button id="exOff" aria-label="Tắt ảnh mẫu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <span class="div"></span>
+        <button id="exLess" aria-label="Mờ hơn">−</button>
+        <span class="pct num" id="exPct">50%</span>
+        <button id="exMore" aria-label="Rõ hơn">+</button>
+      </div>
       <div class="lens">
         <button class="framebtn" id="frameBtn" aria-label="Đổi khung ảnh cho khớp Camera gốc">4:3</button>
         <span class="div" id="lensDiv" hidden></span>
@@ -276,6 +307,8 @@ button{cursor:pointer;border:0;background:none;padding:0}
       <p id="startErr" class="note" hidden></p>
     </div>
   </div>
+
+  <div class="tpls" id="tpls" role="group" aria-label="Khung mẫu bố cục và ảnh mẫu"></div>
 
   <div class="modes" role="group" aria-label="Chế độ hướng dẫn">
     <button id="modeCam" aria-pressed="true">Chỉnh máy</button>
@@ -427,7 +460,7 @@ const MODELS = {
   classify: "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
 };
 
-const APP_VERSION = "1.8.1";
+const APP_VERSION = "1.9.0";
 const $ = (id) => document.getElementById(id);
 const video = $("video"), canvas = $("ov"), vf = $("vf");
 const ctx = canvas.getContext("2d");
@@ -435,7 +468,8 @@ const ctx = canvas.getContext("2d");
 /* ---------------- settings ---------------- */
 const S = (() => {
   const d = { recipeSel:{}, saver:false, autoPause:true, showPerf:true, threshold:80, scoreModel:2, text:true, level:"balanced", grid:"thirds",
-              shortcutName:"Coach Camera", shortcutReady:false, frame:"4:3" };
+              shortcutName:"Coach Camera", shortcutReady:false, frame:"4:3",
+              tpl:"off", tplFlip:false, ex:null, exOp:0.5 };
   try { return Object.assign(d, JSON.parse(localStorage.getItem("coach.settings") || "{}")); } catch { return d; }
 })();
 // thang điểm mới theo cẩm nang (5 nhóm, 100 điểm): đưa ngưỡng về 80 một lần
@@ -643,7 +677,7 @@ function setupZoom() {
   const track = st.stream?.getVideoTracks()[0];
   const caps = track?.getCapabilities?.();
   if (!caps || !caps.zoom) return;
-  const opts = [1, 2, 3, 5].filter(z => z >= caps.zoom.min && z <= caps.zoom.max);
+  const opts = [1, 1.5, 2, 3, 4].filter(z => z >= caps.zoom.min && z <= caps.zoom.max);
   if (opts.length < 2) return;
   $("lensDiv").hidden = false;
   for (const z of opts) {
@@ -1589,7 +1623,7 @@ function sizeCanvas() {
 let lastDrawKey = "";
 function draw() {
   const g0 = st.guidance;
-  const key = [vf.clientWidth, vf.clientHeight, S.frame, S.grid, st.coachOn, st.scanning, st.running,
+  const key = [vf.clientWidth, vf.clientHeight, S.frame, S.grid, S.tpl, S.tplFlip, st.coachOn, st.scanning, st.running,
     g0 && g0.score, g0 && g0.aligned, g0 && Math.round((g0.tilt || 0) * 2), g0 && g0.subject && Math.round(g0.subject.x * 200) + ":" + Math.round(g0.subject.y * 200),
     g0 && g0.target && Math.round(g0.target.x * 200), g0 && g0.horizonY && Math.round(g0.horizonY * 100), g0 && g0.camAngle && Math.round(g0.camAngle),
     st.scanning && st.obs ? st.obs.people.length + ":" + st.obs.objects.length : ""].join("|");
@@ -1613,6 +1647,7 @@ function draw() {
     }
     ctx.stroke();
   }
+  if (st.running) drawTemplate(fx, fy, fw, fh);
   if (!st.coachOn || !st.guidance) return;
   const g = st.guidance;
   const R = (r) => [r.x * w, r.y * h, r.w * w, r.h * h];
@@ -1685,6 +1720,156 @@ function draw() {
     ctx.fillText(`Góc máy ${deg(g.camAngle)}`, w / 2, fy + fh * 0.84 + (g.tilt != null ? 44 : 0));
   }
 }
+
+/* =========================================================
+   5b. Khung mẫu bố cục + ảnh mẫu (giống các app "pose guide")
+   Toạ độ 0–1 tính trong khung ảnh (frameRect), x = 0 mép trái, y = 0 mép trên.
+   ========================================================= */
+const TEMPLATES = [
+  { id:"off", name:"Tắt", shapes:[] },
+  { id:"body", name:"Toàn thân", tip:"Người đứng trong khung, chân chạm đáy khung, chân trời ngang vai",
+    shapes:[{ t:"line", p:[[0,.44],[1,.44]] }, { t:"line", p:[[.5,.44],[.5,.5]] }, { t:"rect", x:.4, y:.5, w:.2, h:.42, r:.05 }] },
+  { id:"tline", name:"Đường T", tip:"Chân trời ở 1/3 trên, người đứng trên trục giữa",
+    shapes:[{ t:"line", p:[[0,.36],[1,.36]] }, { t:"line", p:[[.5,.36],[.5,.58]] }, { t:"rect", x:.43, y:.58, w:.14, h:.3, r:.04 }] },
+  { id:"lline", name:"Đường L", tip:"Cạnh dọc và cạnh ngang ôm chủ thể. Chạm lần nữa để lật",
+    shapes:[{ t:"line", p:[[.28,.08],[.28,.74],[.95,.74]] }, { t:"oval", cx:.6, cy:.54, rx:.16, ry:.13 }] },
+  { id:"rect", name:"Chữ nhật", tip:"Đặt mép bàn/khung trùng hình chữ nhật, món chính vào vòng lớn",
+    shapes:[{ t:"rect", x:.14, y:.26, w:.72, h:.5, r:.03 }, { t:"oval", cx:.37, cy:.45, rx:.12, ry:.09 }, { t:"oval", cx:.63, cy:.58, rx:.13, ry:.1 }] },
+  { id:"diag", name:"Đường chéo", tip:"Cho đường dẫn chạy theo đường chéo, chủ thể ở điểm 1/3. Chạm lần nữa để lật",
+    shapes:[{ t:"line", p:[[.04,.96],[.96,.04]] }, { t:"oval", cx:.67, cy:.33, rx:.12, ry:.09 }] },
+  { id:"sym", name:"Đối xứng", tip:"Trục giữa chia đôi khung, chủ thể đứng giữa",
+    shapes:[{ t:"line", p:[[.5,0],[.5,1]] }, { t:"line", p:[[0,.62],[1,.62]] }, { t:"oval", cx:.5, cy:.42, rx:.14, ry:.16 }] },
+  { id:"face", name:"Cận mặt", tip:"Mắt nằm trên đường 1/3 trên, mặt trong vòng",
+    shapes:[{ t:"oval", cx:.5, cy:.4, rx:.2, ry:.2 }, { t:"line", p:[[.1,1/3],[.9,1/3]], dash:true }, { t:"line", p:[[.08,1],[.2,.78],[.8,.78],[.92,1]] }] },
+];
+const tplById = (id) => TEMPLATES.find(t => t.id === id) || TEMPLATES[0];
+const FLIPPABLE = new Set(["lline", "diag"]);
+
+function drawTemplate(fx, fy, fw, fh) {
+  const t = tplById(S.tpl);
+  if (!t.shapes.length) return;
+  const fl = S.tplFlip && FLIPPABLE.has(t.id);
+  const X = (x) => fx + (fl ? 1 - x : x) * fw, Y = (y) => fy + y * fh;
+  ctx.save();
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  for (const pass of [0, 1]) {           // viền tối mảnh bên dưới để nét trắng nổi trên nền sáng
+    ctx.strokeStyle = pass ? "rgba(242,239,230,.92)" : "rgba(13,14,12,.35)";
+    ctx.lineWidth = pass ? 1.6 : 3.6;
+    for (const s of t.shapes) {
+      ctx.setLineDash(s.dash ? [5, 6] : []);
+      ctx.beginPath();
+      if (s.t === "line") s.p.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)));
+      else if (s.t === "rect") {
+        const x0 = Math.min(X(s.x), X(s.x + s.w)), r = s.r * fw;
+        ctx.roundRect ? ctx.roundRect(x0, Y(s.y), s.w * fw, s.h * fh, r) : ctx.rect(x0, Y(s.y), s.w * fw, s.h * fh);
+      } else if (s.t === "oval") ctx.ellipse(X(s.cx), Y(s.cy), s.rx * fw, s.ry * fw, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+/* Ảnh nhỏ của khung mẫu (SVG 30×40, cùng tỉ lệ 3:4 với khung ngắm) */
+function tplIcon(t) {
+  const fl = S.tplFlip && FLIPPABLE.has(t.id), X = (x) => ((fl ? 1 - x : x) * 30).toFixed(1), Y = (y) => (y * 40).toFixed(1);
+  if (!t.shapes.length) return '<svg viewBox="0 0 30 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="15" cy="20" r="8"/><path d="m9.5 25.5 11-11"/></svg>';
+  let d = "";
+  for (const s of t.shapes) {
+    if (s.t === "line") d += `<polyline points="${s.p.map(([x, y]) => X(x) + "," + Y(y)).join(" ")}"${s.dash ? ' stroke-dasharray="2 2.5"' : ""}/>`;
+    else if (s.t === "rect") d += `<rect x="${Math.min(X(s.x), X(s.x + s.w))}" y="${Y(s.y)}" width="${(s.w * 30).toFixed(1)}" height="${(s.h * 40).toFixed(1)}" rx="${(s.r * 30).toFixed(1)}"/>`;
+    else d += `<ellipse cx="${X(s.cx)}" cy="${Y(s.cy)}" rx="${(s.rx * 30).toFixed(1)}" ry="${(s.ry * 30).toFixed(1)}"/>`;
+  }
+  return `<svg viewBox="0 0 30 40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x=".7" y=".7" width="28.6" height="38.6" rx="3" stroke-opacity=".35"/>${d}</svg>`;
+}
+
+/* Ảnh mẫu: lưu tối đa 8 ảnh đã thu nhỏ ngay trên máy (không gửi đi đâu) */
+const EX_KEY = "coach.examples", EX_MAX = 8;
+function loadExamples() { try { return JSON.parse(localStorage.getItem(EX_KEY) || "[]"); } catch { return []; } }
+function saveExamples(list) {
+  while (list.length) {
+    try { localStorage.setItem(EX_KEY, JSON.stringify(list)); return true; }
+    catch { list.pop(); }                 // đầy bộ nhớ: bỏ ảnh cũ nhất rồi thử lại
+  }
+  try { localStorage.removeItem(EX_KEY); } catch {}
+  return false;
+}
+async function addExample(file) {
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation:"from-image" }).catch(() => createImageBitmap(file));
+    const k = Math.min(1, 900 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    const data = c.toDataURL("image/jpeg", 0.8);
+    const id = "ex" + Date.now().toString(36);
+    const list = [{ id, data }, ...loadExamples()].slice(0, EX_MAX);
+    if (!saveExamples(list)) { toast("Máy hết chỗ lưu ảnh mẫu"); return; }
+    S.ex = id; saveS();
+    if (c.width > c.height) toast("Ảnh mẫu đang nằm ngang. Khung ngắm dọc nên ảnh sẽ bị cắt hai bên");
+    else toast("Canh người và cảnh trùng với ảnh mẫu mờ rồi chụp");
+  } catch { toast("Không mở được ảnh này"); }
+  renderTemplates(); syncExample();
+}
+function removeExample(id) {
+  saveExamples(loadExamples().filter(e => e.id !== id));
+  if (S.ex === id) { S.ex = null; saveS(); }
+  renderTemplates(); syncExample();
+}
+function syncExample() {
+  const img = $("exImg"), pill = $("exPill");
+  const e = S.ex && loadExamples().find(x => x.id === S.ex);
+  if (S.ex && !e) { S.ex = null; saveS(); }
+  img.hidden = !e; pill.hidden = !e;
+  if (!e) { img.removeAttribute("src"); return; }
+  if (img.dataset.id !== e.id) { img.src = e.data; img.dataset.id = e.id; }
+  const f = frameRect();
+  Object.assign(img.style, { left:f.x * 100 + "%", top:f.y * 100 + "%", width:f.w * 100 + "%", height:f.h * 100 + "%", opacity:S.exOp });
+  $("exPct").textContent = Math.round(S.exOp * 100) + "%";
+}
+function setExOp(d) { S.exOp = Math.round(Math.max(0.1, Math.min(0.9, S.exOp + d)) * 10) / 10; saveS(); syncExample(); }
+
+function renderTemplates() {
+  const box = $("tpls"); box.innerHTML = "";
+  const tile = (label, pressed, inner, onClick) => {
+    const b = document.createElement("button");
+    b.className = "tpl"; b.setAttribute("aria-pressed", String(pressed));
+    b.innerHTML = `<span class="tile">${inner}</span><small></small>`;
+    b.lastChild.textContent = label;
+    if (onClick) b.onclick = onClick;
+    box.appendChild(b); return b;
+  };
+  for (const t of TEMPLATES) {
+    tile(t.name, S.tpl === t.id, tplIcon(t), () => {
+      if (S.tpl === t.id && FLIPPABLE.has(t.id)) { S.tplFlip = !S.tplFlip; saveS(); toast("Đã lật khung"); }
+      else { S.tpl = t.id; saveS(); if (t.tip) toast(t.tip); }
+      renderTemplates(); lastDrawKey = ""; draw();
+    });
+  }
+  const sep = document.createElement("span"); sep.className = "sep"; box.appendChild(sep);
+  // nút thêm ảnh mẫu: <label> chứa input file để Safari mở Thư viện ảnh
+  const add = document.createElement("label");
+  add.className = "tpl"; add.setAttribute("aria-label", "Thêm ảnh mẫu từ Thư viện");
+  add.innerHTML = '<span class="tile"><svg viewBox="0 0 24 24" style="width:22px;height:22px" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><small>Ảnh mẫu</small><input type="file" accept="image/*">';
+  add.querySelector("input").onchange = (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) addExample(f); };
+  box.appendChild(add);
+  for (const e of loadExamples()) {
+    const b = tile(S.ex === e.id ? "Đang dùng" : "Mẫu", S.ex === e.id, "", () => {
+      if (b.dataset.held) return;
+      S.ex = S.ex === e.id ? null : e.id; saveS(); renderTemplates(); syncExample();
+    });
+    const im = document.createElement("img"); im.src = e.data; im.alt = "Ảnh mẫu"; b.firstChild.appendChild(im);
+    // giữ lâu để xoá
+    let timer = 0;
+    b.addEventListener("pointerdown", () => { delete b.dataset.held; timer = setTimeout(() => {
+      b.dataset.held = "1";
+      if (confirm("Xoá ảnh mẫu này?")) removeExample(e.id);
+    }, 650); });
+    for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => clearTimeout(timer));
+    b.addEventListener("contextmenu", (ev) => ev.preventDefault());
+  }
+}
+$("exOff").onclick = () => { S.ex = null; saveS(); renderTemplates(); syncExample(); };
+$("exLess").onclick = () => setExOp(-0.1);
+$("exMore").onclick = () => setExOp(0.1);
 
 let lastCardKey = "", lastRingKey = "";
 function render() {
@@ -2065,7 +2250,7 @@ function syncSettingsUI() {
   $("recipeInfo").textContent = `Kiểu chụp đang có: ${RECIPES.length}` + (recipesFromFile ? ` (${recipesFromFile} từ file recipes.json)` : "");
   $("thrVal").textContent = S.threshold; $("optShortcut").value = S.shortcutName;
 }
-function setS(k, v) { S[k] = v; saveS(); syncSettingsUI(); syncTopBar(); lastCardKey = ""; }
+function setS(k, v) { S[k] = v; saveS(); syncSettingsUI(); syncTopBar(); syncExample(); lastCardKey = ""; }
 
 $("coachBtn").onclick = () => { st.coachOn = !st.coachOn; syncTopBar(); lastRecipeKey = ""; renderRecipeBtn(); };
 $("recipeBtn").onclick = openRecipes;
@@ -2118,7 +2303,7 @@ async function begin(fromTap) {
     markCamOK(true);
     $("start").hidden = true;
     st.running = true; st.sessionStart = performance.now(); st.guidance = scanningGuidance(); st.lastTouch = performance.now();
-    renderChips(); syncTopBar();
+    renderChips(); syncTopBar(); renderTemplates(); syncExample();
     loadAI();
     loop();
   } catch (e) {
@@ -2165,6 +2350,7 @@ document.addEventListener("visibilitychange", async () => {
 
 syncTopBar();
 renderControls();
+renderTemplates();
 loadRecipes();
 autoStart();
 $("verNow").textContent = APP_VERSION;

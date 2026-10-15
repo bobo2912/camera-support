@@ -35,6 +35,16 @@ Bấm **Camera gốc** lần đầu, app hiện hướng dẫn:
 3. **Cho khung ảnh khớp nhau**: nút nhỏ ở góc dưới bên trái khung ngắm (4:3 / 16:9 / 1:1) phải trùng với tỉ lệ đang chọn trong app Camera. Nếu Camera để 16:9 mà app để 4:3, phần hai bên sẽ bị cắt mất. Giữ zoom 1× ở cả hai app.
 4. Chụp xong, vuốt thanh ngang dưới đáy màn hình sang phải để quay lại Camera Coach. Muốn chấm điểm ảnh vừa chụp, bấm nút ảnh nhỏ bên trái nút chụp.
 
+## Khung mẫu và ảnh mẫu (từ bản 1.9)
+
+Hàng ô ngay dưới khung ngắm, giống các app "pose guide":
+
+- **Khung mẫu bố cục**: Toàn thân, Đường T, Đường L, Chữ nhật, Đường chéo, Đối xứng, Cận mặt. Chọn một khung rồi canh người, chân trời, mép bàn trùng với nét trắng. Chạm lại Đường L hoặc Đường chéo để lật trái/phải. Ô **Tắt** để bỏ khung.
+- **Ảnh mẫu**: bấm ô **+ Ảnh mẫu**, chọn một ảnh bạn thích trong Thư viện. Ảnh hiện mờ chồng lên camera để bạn canh theo. Thanh **Ảnh mẫu − 50% +** trong khung ngắm chỉnh độ rõ, nút ✕ để tắt. Giữ lâu một ảnh mẫu để xoá. App lưu tối đa 8 ảnh mẫu đã thu nhỏ ngay trên máy, không gửi đi đâu.
+- **Zoom** có thêm 1.5× và 4× (chỉ hiện khi camera của máy hỗ trợ zoom trong Safari).
+
+Khung mẫu dùng song song với AI Coach: AI vẫn chấm điểm và chỉ dẫn như cũ.
+
 ## Bộ quy tắc chấm điểm (theo Cẩm nang góc chụp & bố cục)
 
 Từ bản 1.8, AI chấm và chỉ dẫn theo chương 11 của cẩm nang:
