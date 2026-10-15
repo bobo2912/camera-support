@@ -1,4 +1,4 @@
 {
-  "version": "1.9.0",
-  "notes": "Thêm khung mẫu bố cục (Toàn thân, Đường T, Đường L, Chữ nhật, Đường chéo, Đối xứng, Cận mặt), ảnh mẫu mờ chỉnh độ trong và zoom 1.5×/4×"
+  "version": "1.9.1",
+  "notes": "Hiện thông báo lỗi trên màn hình nếu có trục trặc; khung mẫu lỗi không làm đứng app"
 }

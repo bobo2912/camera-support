@@ -10,6 +10,22 @@
 <meta name="theme-color" content="#0D0E0C">
 <title>Camera Coach</title>
 <script>if (navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches)) document.documentElement.classList.add("standalone");</script>
+<script>
+/* Báo lỗi lên màn hình để chụp gửi lại khi app không bấm được */
+(function(){
+  function show(msg){
+    var d=document.getElementById("errbar");
+    if(!d){ d=document.createElement("div"); d.id="errbar";
+      d.style.cssText="position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:99;padding:10px 12px;border-radius:12px;background:#7a1f16;color:#fff;font:13px/1.4 system-ui,sans-serif;white-space:pre-wrap;-webkit-user-select:text;user-select:text";
+      d.onclick=function(){ d.remove(); };
+      (document.body||document.documentElement).appendChild(d); }
+    d.textContent="Lỗi (chụp màn hình gửi lại, chạm để ẩn):\n"+msg;
+  }
+  window.addEventListener("error",function(e){ if(e.target&&e.target!==window) return; if(!e.message||e.message==="Script error.") return;
+    show(e.message+(e.lineno?" (dòng "+e.lineno+")":"")); });
+  window.__showErr=show;
+})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
@@ -166,7 +182,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .perf.hot{color:var(--hot)}
 
 /* ---------- toast ---------- */
-.toast{position:fixed;left:50%;bottom:calc(var(--sab) + 130px);transform:translateX(-50%);z-index:40;max-width:88vw;
+.toast{pointer-events:none;position:fixed;left:50%;bottom:calc(var(--sab) + 130px);transform:translateX(-50%);z-index:40;max-width:88vw;
   padding:10px 16px;border-radius:14px;background:var(--surface2);font-size:14px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 
 /* ---------- sheets ---------- */
@@ -460,7 +476,7 @@ const MODELS = {
   classify: "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
 };
 
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.9.1";
 const $ = (id) => document.getElementById(id);
 const video = $("video"), canvas = $("ov"), vf = $("vf");
 const ctx = canvas.getContext("2d");
@@ -1647,7 +1663,7 @@ function draw() {
     }
     ctx.stroke();
   }
-  if (st.running) drawTemplate(fx, fy, fw, fh);
+  if (st.running) { try { drawTemplate(fx, fy, fw, fh); } catch (e) { reportErr("khung mẫu", e); } }
   if (!st.coachOn || !st.guidance) return;
   const g = st.guidance;
   const R = (r) => [r.x * w, r.y * h, r.w * w, r.h * h];
@@ -1866,6 +1882,11 @@ function renderTemplates() {
     for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => clearTimeout(timer));
     b.addEventListener("contextmenu", (ev) => ev.preventDefault());
   }
+}
+let errShown = false;
+function reportErr(where, e) { if (errShown) return; errShown = true; window.__showErr && window.__showErr(where + ": " + (e && e.message || e)); }
+function safeTemplates() {
+  try { renderTemplates(); syncExample(); } catch (e) { reportErr("hàng khung mẫu", e); }
 }
 $("exOff").onclick = () => { S.ex = null; saveS(); renderTemplates(); syncExample(); };
 $("exLess").onclick = () => setExOp(-0.1);
@@ -2250,7 +2271,7 @@ function syncSettingsUI() {
   $("recipeInfo").textContent = `Kiểu chụp đang có: ${RECIPES.length}` + (recipesFromFile ? ` (${recipesFromFile} từ file recipes.json)` : "");
   $("thrVal").textContent = S.threshold; $("optShortcut").value = S.shortcutName;
 }
-function setS(k, v) { S[k] = v; saveS(); syncSettingsUI(); syncTopBar(); syncExample(); lastCardKey = ""; }
+function setS(k, v) { S[k] = v; saveS(); syncSettingsUI(); syncTopBar(); try { syncExample(); } catch (e) { reportErr("ảnh mẫu", e); } lastCardKey = ""; }
 
 $("coachBtn").onclick = () => { st.coachOn = !st.coachOn; syncTopBar(); lastRecipeKey = ""; renderRecipeBtn(); };
 $("recipeBtn").onclick = openRecipes;
@@ -2303,7 +2324,7 @@ async function begin(fromTap) {
     markCamOK(true);
     $("start").hidden = true;
     st.running = true; st.sessionStart = performance.now(); st.guidance = scanningGuidance(); st.lastTouch = performance.now();
-    renderChips(); syncTopBar(); renderTemplates(); syncExample();
+    renderChips(); syncTopBar(); safeTemplates();
     loadAI();
     loop();
   } catch (e) {
@@ -2350,7 +2371,7 @@ document.addEventListener("visibilitychange", async () => {
 
 syncTopBar();
 renderControls();
-renderTemplates();
+safeTemplates();
 loadRecipes();
 autoStart();
 $("verNow").textContent = APP_VERSION;
